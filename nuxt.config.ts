@@ -31,5 +31,12 @@ export default defineNuxtConfig({
   // 3. 確保實驗性功能關閉 (避免 macro 錯誤)
   experimental: {
     macros: false
+  },
+  // 4. [新增] 關閉 Vue 的實驗性功能 (Macro)，這是避免那個錯誤的關鍵
+  features: {
+    inlineSSRStyles: false
+  },
+  vue: {
+    propsDestructure: false
   }
 })
