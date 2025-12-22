@@ -3,15 +3,15 @@
 @tailwind utilities;
 
 body {
-  @apply bg-softBeige text-deepBrown font-sans leading-relaxed;
+  @apply bg-slate-50 text-slate-900 font-sans leading-relaxed;
 }
 
 .btn-primary {
-  @apply bg-orchardGreen text-white px-4 py-2 rounded-2xl text-lg shadow-soft transition
-    hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-gentleOrange focus:ring-offset-2;
+  @apply bg-indigo-500 text-white px-4 py-2 rounded-xl text-base shadow-soft transition
+    hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2;
 }
 
 .section-card {
-  @apply bg-white rounded-2xl shadow-soft p-4 space-y-2;
+  @apply bg-white rounded-2xl shadow-soft p-5 space-y-3;
 }
 
