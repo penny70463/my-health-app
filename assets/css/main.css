@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-softBeige text-deepBrown font-sans leading-relaxed;
+}
+
+.btn-primary {
+  @apply bg-orchardGreen text-white px-4 py-2 rounded-2xl text-lg shadow-soft transition
+    hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-gentleOrange focus:ring-offset-2;
+}
+
+.section-card {
+  @apply bg-white rounded-2xl shadow-soft p-4 space-y-2;
+}
+
