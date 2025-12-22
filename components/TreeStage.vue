@@ -11,12 +11,15 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue';
 
-const props = defineProps<{
-  stage: number
-}>()
+const props = defineProps({
+  stage: {
+    type: Number,
+    required: true
+  }
+})
 
 const clampedStage = computed(() => Math.min(Math.max(props.stage, 1), 4))
 

@@ -23,11 +23,6 @@ export default defineNuxtConfig({
     client: false
   },
 
-  // 2. 避免建置時過度檢查 TS
-  typescript: {
-    typeCheck: false
-  },
-
   // 3. 確保實驗性功能關閉 (避免 macro 錯誤)
   experimental: {
     macros: false
@@ -40,3 +35,4 @@ export default defineNuxtConfig({
     propsDestructure: false
   }
 })
+

@@ -58,7 +58,7 @@
   </section>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { nextTick, ref } from 'vue'
 
 const dailyWaterTarget = 8

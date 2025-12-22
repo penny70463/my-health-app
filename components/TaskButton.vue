@@ -9,17 +9,20 @@
   </button>
 </template>
 
-<script setup lang="ts">
-const props = withDefaults(
-  defineProps<{
-    label: string
-    color?: string
-    icon?: string
-  }>(),
-  {
-    color: '#6BBF59',
-    icon: ''
+<script setup>
+const props = defineProps({
+  label: {
+    type: String,
+    required: true
+  },
+  color: {
+    type: String,
+    default: '#6BBF59'
+  },
+  icon: {
+    type: String,
+    default: ''
   }
-)
+})
 </script>
 
