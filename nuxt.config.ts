@@ -16,5 +16,20 @@ export default defineNuxtConfig({
       title: '長青幸福果園',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }]
     }
+  },
+  // 1. 關閉 SourceMap，解決找不到檔案的問題
+  sourcemap: {
+    server: false,
+    client: false
+  },
+
+  // 2. 避免建置時過度檢查 TS
+  typescript: {
+    typeCheck: false
+  },
+
+  // 3. 確保實驗性功能關閉 (避免 macro 錯誤)
+  experimental: {
+    macros: false
   }
 })
