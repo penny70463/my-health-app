@@ -9,6 +9,7 @@
     "preview": "nuxt preview"
   },
   "dependencies": {
+    "@line/liff": "^2.27.3",
     "nuxt": "3.11.2",
     "vue": "3.3.4"
   },
