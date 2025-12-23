@@ -15,7 +15,11 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: '長青幸福果園',
-      meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }]
+      meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
+      viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
+      bodyAttrs: {
+        class: 'overscroll-none' // 防止在 iOS 上拉動時出現橡皮筋效果
+      }
     }
   },
   // 1. 關閉 SourceMap，解決找不到檔案的問題

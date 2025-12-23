@@ -33,7 +33,7 @@
         :disabled="isLoading"
       />
       <TaskButton
-        label="抬腿 10 下"
+        label="抬腿 20 下"
         icon="🦵"
         color="#FFB347"
         @click="handleLegs"
