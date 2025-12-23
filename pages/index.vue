@@ -1,62 +1,81 @@
 <template>
-  <section class="section-card space-y-4 relative">
-    <div v-if="isLoading" class="absolute inset-0 bg-white/80 z-50 flex items-center justify-center rounded-2xl">
-      <div class="text-orchardGreen animate-pulse font-bold">📡 資料讀取中...</div>
+  <section 
+    class="flex flex-col items-center justify-center min-h-dvh p-4 relative"
+    style="padding-top: max(2rem, env(safe-area-inset-top)); padding-bottom: max(2rem, env(safe-area-inset-bottom));"
+  >
+    
+    <div v-if="isLoading" class="absolute inset-0 bg-blue-50/90 z-50 flex items-center justify-center">
+      <div class="text-orchardGreen animate-pulse font-bold text-lg">📡 果園連線中...</div>
     </div>
 
-    <h1 class="text-2xl font-semibold text-orchardGreen">長青幸福果園</h1>
-    <p class="text-lg text-deepBrown/80">
-      歡迎加入健康伴侶，讓每天的喝水與抬腿更有趣。
-    </p>
-
-    <div class="inline-block w-full relative">
-      <TreeStage :stage="treeStage" />
-      <div
-        v-if="showRakeEffect"
-        class="pointer-events-none absolute inset-0 flex items-center justify-center"
-      >
-        <div class="text-4xl opacity-0 animate-rake-fade">🧹</div>
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 space-y-6 relative z-10">
+      
+      <div class="text-center space-y-2">
+        <h1 class="text-2xl font-bold text-orchardGreen">長青幸福果園</h1>
+        <p class="text-sm text-slate-500">
+          歡迎加入健康伴侶，讓每天的喝水與抬腿更有趣。
+        </p>
       </div>
-    </div>
 
-    <div class="text-base text-slate-600 space-y-1">
-      <p>今日喝水：<span class="font-bold text-blue-600">{{ waterCount }}</span> / {{ dailyWaterTarget }} 杯</p>
-      <p>樹的成長階段：第 {{ treeStage }} 階段（共 4 階）</p>
-    </div>
+      <div class="relative w-full flex justify-center py-4">
+        <TreeStage :stage="treeStage" />
+        <div
+          v-if="showRakeEffect"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <div class="text-6xl opacity-0 animate-rake-fade">🧹</div>
+        </div>
+      </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <TaskButton
-        label="喝水 200cc"
-        icon="💧"
-        color="#6BBF59"
-        @click="handleWater"
-        :disabled="isLoading"
-      />
-      <TaskButton
-        label="抬腿 20 下"
-        icon="🦵"
-        color="#FFB347"
-        @click="handleLegs"
-        :disabled="isLoading"
-      />
-    </div>
+      <div class="bg-gray-50 rounded-xl p-4 space-y-2 text-sm text-slate-600">
+        <div class="flex justify-between items-center">
+          <span>今日喝水</span>
+          <span class="font-bold text-blue-600 text-lg">{{ waterCount }} / {{ dailyWaterTarget }} 杯</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span>成長階段</span>
+          <span>第 {{ treeStage }} 階段</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+          <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-500" :style="{ width: (waterCount / dailyWaterTarget) * 100 + '%' }"></div>
+        </div>
+      </div>
 
-    <p class="text-sm text-slate-500">
-      小提醒：每喝滿 2 杯水，果樹就會成長一階；喝滿 8 杯會有小小驚喜喔！
-    </p>
+      <div class="grid grid-cols-2 gap-4">
+        <TaskButton
+          label="喝水 200cc"
+          icon="💧"
+          color="#6BBF59"
+          @click="handleWater"
+          :disabled="isLoading"
+        />
+        <TaskButton
+          label="抬腿 10 下"
+          icon="🦵"
+          color="#FFB347"
+          @click="handleLegs"
+          :disabled="isLoading"
+        />
+      </div>
+
+      <p class="text-xs text-center text-slate-400">
+        小提醒：每喝滿 2 杯水，果樹就會成長一階。
+      </p>
+    </div>
 
     <div
       v-if="showWaterReward"
-      class="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
+      class="fixed inset-0 flex items-center justify-center pointer-events-none z-50 bg-black/20"
     >
       <div
-        class="bg-white/90 rounded-2xl px-6 py-4 shadow-soft border border-indigo-300 text-center animate-pulse"
+        class="bg-white rounded-3xl p-8 shadow-2xl border-4 border-yellow-300 text-center animate-bounce-in"
       >
-        <div class="text-4xl mb-2">🎉</div>
-        <p class="text-lg text-slate-800 font-semibold">今天喝水任務達成！</p>
-        <p class="text-sm text-slate-600">好棒！繼續保持這個好習慣～</p>
+        <div class="text-6xl mb-4">🎉</div>
+        <h3 class="text-xl text-slate-800 font-bold mb-2">任務達成！</h3>
+        <p class="text-slate-600">太棒了！今天的水分補給充足！</p>
       </div>
     </div>
+
   </section>
 </template>
 
@@ -71,10 +90,10 @@ const { $liff } = useNuxtApp()
 const dailyWaterTarget = 8
 const waterPerStage = 2
 
-const userId = ref(null)        // 儲存 LIFF User ID
-const isLoading = ref(true)     // 載入狀態
+const userId = ref(null)        
+const isLoading = ref(true)     
 const waterCount = ref(0)
-const treeStage = ref(1)        // 1 ~ 4
+const treeStage = ref(1)        
 const showWaterReward = ref(false)
 const showRakeEffect = ref(false)
 
@@ -82,35 +101,28 @@ const showRakeEffect = ref(false)
 const loadUserData = async (uid) => {
   try {
     isLoading.value = true
-    
-    // 查詢 users 表格
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('user_id', uid)
       .single()
 
-    const today = new Date().toISOString().split('T')[0] // 取得今天日期 YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0] 
 
     if (error || !data) {
-      // A. 新用戶：建立初始資料
       console.log('新用戶，建立資料...')
-      await saveUserData(uid, 0, 1, today) // 初始：0杯水，第1階段
+      await saveUserData(uid, 0, 1, today) 
       waterCount.value = 0
       treeStage.value = 1
     } else {
-      // B. 舊用戶：檢查日期
       if (data.last_updated === today) {
-        // 是今天：載入進度
-        console.log('載入今日進度')
         waterCount.value = data.water_count
         treeStage.value = data.tree_stage
       } else {
-        // 跨日了：重置進度 (新的一天，從頭開始)
         console.log('跨日重置')
         waterCount.value = 0
         treeStage.value = 1
-        await saveUserData(uid, 0, 1, today) // 更新日期並歸零
+        await saveUserData(uid, 0, 1, today)
       }
     }
   } catch (e) {
@@ -123,8 +135,6 @@ const loadUserData = async (uid) => {
 // === 4. 核心邏輯：存檔到雲端 ===
 const saveUserData = async (uid, water, stage, date) => {
   if (!uid) return
-  
-  // upsert: 有就更新，沒有就新增
   const { error } = await supabase
     .from('users')
     .upsert({ 
@@ -133,14 +143,11 @@ const saveUserData = async (uid, water, stage, date) => {
       tree_stage: stage,
       last_updated: date
     })
-    
   if (error) console.error('存檔失敗', error)
 }
 
-// === 5. 操作邏輯 (整合原本的動畫與存檔) ===
-
+// === 5. 操作邏輯 ===
 const maybeLevelUpTree = () => {
-  // 每滿 2 杯升一階，最多到 4 階
   if (waterCount.value > 0 && waterCount.value % waterPerStage === 0) {
     treeStage.value = Math.min(4, treeStage.value + 1)
   }
@@ -157,26 +164,20 @@ const maybeShowWaterReward = () => {
 
 const handleWater = async () => {
   if (waterCount.value < dailyWaterTarget) {
-    // 1. 本地更新 (讓畫面立刻有反應)
     waterCount.value += 1
     maybeLevelUpTree()
     maybeShowWaterReward()
-
-    // 2. 雲端存檔
     if (userId.value) {
       const today = new Date().toISOString().split('T')[0]
       await saveUserData(userId.value, waterCount.value, treeStage.value, today)
     }
-
   } else {
     alert('今天的喝水任務已經完成囉！')
   }
 }
 
 const handleLegs = async () => {
-  alert('完成鬆土！做得好～')
-  
-  // 1. 特效動畫
+  // alert('完成鬆土！做得好～') // 拿掉 alert 體驗比較順暢
   showRakeEffect.value = false
   nextTick(() => {
     showRakeEffect.value = true
@@ -184,8 +185,6 @@ const handleLegs = async () => {
       showRakeEffect.value = false
     }, 600)
   })
-
-  // 2. 雲端存檔 (抬腿雖然沒變數變化，但也更新一下 last_updated 保持活躍)
   if (userId.value) {
     const today = new Date().toISOString().split('T')[0]
     await saveUserData(userId.value, waterCount.value, treeStage.value, today)
@@ -195,44 +194,38 @@ const handleLegs = async () => {
 // === 6. 初始化入口 ===
 onMounted(async () => {
   try {
-    // 等待 LIFF SDK
     await $liff.ready
-    
     if ($liff.isLoggedIn()) {
       const profile = await $liff.getProfile()
       userId.value = profile.userId
-      console.log('取得 User ID:', userId.value)
-      
-      // 開始讀取雲端資料
       await loadUserData(userId.value)
     } else {
-      // 沒登入就引導登入
       $liff.login()
     }
   } catch (e) {
     console.error('LIFF 初始化失敗', e)
-    isLoading.value = false // 失敗也要把 loading 關掉
+    isLoading.value = false 
   }
 })
 </script>
 
 <style scoped>
 @keyframes rakeFade {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.9);
-  }
-  40% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-8px) scale(1.05);
-  }
+  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+  50% { opacity: 1; transform: translateY(0) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-10px) scale(1); }
+}
+.animate-rake-fade {
+  animation: rakeFade 800ms ease-out forwards;
 }
 
-.animate-rake-fade {
-  animation: rakeFade 600ms ease-out forwards;
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); opacity: 1; }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.animate-bounce-in {
+  animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 </style>
