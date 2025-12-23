@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
     const messages = [
       {
         type: 'text',
-        text: `🌳 果園小管家提醒\n\n親愛的園丁，今天的任務還沒完成喔！\n\n💧 喝水：${user.water_count}/2000 cc\n🦵 抬腿：${user.leg_count}/2 組\n\n快回來照顧您的果樹吧！💪`
+        text: `🌳 果園小管家提醒\n\n親愛的園丁，今天的任務還沒完成喔！\n\n💧 喝水：${user.water_count}/2000 cc\n🦵 抬腿：${user.leg_count}/2 組\n\n快回來照顧您的果樹吧！💪\n\n'https://liff.line.me/2008750422-1gfKbzUK'`
       }
     ]
 
