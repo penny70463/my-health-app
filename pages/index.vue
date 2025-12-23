@@ -50,7 +50,7 @@
           :disabled="isLoading"
         />
         <TaskButton
-          label="抬腿 10 下"
+          label="抬腿 20 下"
           icon="🦵"
           color="#FFB347"
           @click="handleLegs"
@@ -193,6 +193,22 @@ const handleLegs = async () => {
 
 // === 6. 初始化入口 ===
 onMounted(async () => {
+  // 🟢 1. 本地開發模式 (Mock Mode)
+  // import.meta.dev 是 Nuxt 內建變數，只有在 npm run dev 時會是 true
+  if (import.meta.dev) {
+    console.log('🚧 偵測到本地開發模式，使用假資料模擬畫面')
+    
+    // 模擬延遲 (假裝在讀取，確認 Loading 畫面長怎樣)
+    setTimeout(() => {
+      userId.value = 'local-tester'
+      waterCount.value = 3       // 假裝喝了3杯水
+      treeStage.value = 2        // 假裝樹在第2階段
+      isLoading.value = false    // 關閉讀取遮罩，顯示畫面
+    }, 1000)
+
+    return // ⛔️ 直接結束，不執行後面的 LIFF 登入邏輯
+  }
+  // 🔵 2. 正式環境邏輯 (Vercel 上會跑這段)
   try {
     await $liff.ready
     if ($liff.isLoggedIn()) {
