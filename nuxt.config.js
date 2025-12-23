@@ -8,7 +8,8 @@ export default defineNuxtConfig({
   
   // 載入 Tailwind
   modules: [
-    '@nuxtjs/tailwindcss'
+    '@nuxtjs/tailwindcss',
+    '@nuxtjs/supabase'
   ],
   css: ['~/assets/css/main.css'],
   app: {
@@ -33,6 +34,12 @@ export default defineNuxtConfig({
   },
   vue: {
     propsDestructure: false
-  }
+  },
+  supabase: {
+    // 關閉內建的登入轉址功能，避免 App 一打開就被導向登入頁
+    redirect: false,
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_KEY
+  },
 })
 
