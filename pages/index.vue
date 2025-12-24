@@ -115,13 +115,23 @@
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm text-slate-500">選擇提醒時間</label>
-            <input 
-              type="time" 
-              v-model="tempSettings.time"
-              :disabled="!tempSettings.enabled"
-              class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-lg font-bold text-slate-700 focus:ring-2 focus:ring-green-500 outline-none disabled:opacity-50"
-            />
+            <label class="block text-sm text-slate-500">選擇提醒時間 (整點)</label>
+            <div class="relative">
+              <select 
+                v-model="tempSettings.time"
+                :disabled="!tempSettings.enabled"
+                class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-lg font-bold text-slate-700 focus:ring-2 focus:ring-green-500 outline-none appearance-none disabled:opacity-50"
+              >
+                <option v-for="hour in 24" :key="hour" :value="`${(hour-1).toString().padStart(2, '0')}:00`">
+                  {{ (hour-1).toString().padStart(2, '0') }}:00
+                </option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
           
           <p class="text-xs text-gray-400">

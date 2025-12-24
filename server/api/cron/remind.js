@@ -7,28 +7,35 @@ export default defineEventHandler(async (event) => {
   const supabaseKey = process.env.SUPABASE_KEY
   const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN
 
-  // 檢查變數是否存在
   if (!supabaseUrl || !supabaseKey || !lineToken) {
     return { 
       success: false, 
-      error: '環境變數遺失 (Environment variables missing)',
-      hint: '請檢查 .env 檔案是否包含 SUPABASE_URL, SUPABASE_KEY, LINE_CHANNEL_ACCESS_TOKEN'
+      error: '環境變數遺失',
+      hint: '請檢查 .env 檔案'
     }
   }
 
-  // 初始化 Supabase
   const supabase = createClient(supabaseUrl, supabaseKey)
 
-  // 1. 取得「台灣時間」的今天日期 (格式 YYYY-MM-DD)
-  // 這是為了跟資料庫的 last_active_date 比對
+  // 2. 取得「台灣時間」的現在「小時」與「日期」
+  // currentHour 範例: "08", "09", "14" (24小時制)
+  const currentHour = new Date().toLocaleTimeString('en-GB', { 
+    hour: '2-digit', 
+    hour12: false, 
+    timeZone: 'Asia/Taipei' 
+  })
+  
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
 
-  // 2. 找出需要提醒的用戶
-  // 多選取 daily_water, daily_leg, last_active_date
+  console.log(`⏰ Cron Job 啟動，檢查時間：${currentHour} 點, 日期：${today}`)
+
+  // 3. 找出需要提醒的用戶
+  // 條件：開啟提醒 + 提醒時間的開頭符合目前小時
   const { data: users, error } = await supabase
     .from('users')
-    .select('user_id, daily_water, daily_leg, last_active_date')
+    .select('user_id, daily_water, daily_leg, last_active_date, reminder_time')
     .eq('is_reminder_enabled', true)
+    .ilike('reminder_time', `${currentHour}:%`) // 🌟 關鍵：只抓 "08:xx" 的人
 
   if (error) {
     return { success: false, error: error.message }
@@ -36,14 +43,12 @@ export default defineEventHandler(async (event) => {
 
   const results = []
 
-  // 3. 逐一檢查
+  // 4. 逐一檢查
   for (const user of users) {
     let currentWater = 0
     let currentLeg = 0
 
-    // 🌟 關鍵邏輯：判斷日期 🌟
-    // 如果資料庫紀錄的日期是「今天」，才採信 daily 數值
-    // 如果日期是舊的 (null 或 昨天)，代表今天還沒動，數值視為 0
+    // 🌟 判斷日期 (避免跨日數據干擾)
     if (user.last_active_date === today) {
       currentWater = user.daily_water || 0
       currentLeg = user.daily_leg || 0
@@ -52,11 +57,10 @@ export default defineEventHandler(async (event) => {
       currentLeg = 0
     }
 
-    // 檢查是否達標
+    // 檢查是否達標 (兩項都完成就不提醒)
     const isWaterDone = currentWater >= 2000
     const isLegDone = currentLeg >= 2
     
-    // 兩項都完成，就不吵他
     if (isWaterDone && isLegDone) {
       continue 
     }
@@ -90,5 +94,11 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  return { success: true, sent_count: results.length, details: results }
+  return { 
+    success: true, 
+    check_time: `${today} ${currentHour}:00`,
+    matched_users: users.length,
+    sent_count: results.length, 
+    details: results 
+  }
 })
