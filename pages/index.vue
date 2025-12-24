@@ -252,42 +252,54 @@ const loadUserData = async (uid) => {
   try {
     isLoading.value = true
     const { data, error } = await supabase.from('users').select('*').eq('user_id', uid).single()
-    const today = new Date().toISOString().split('T')[0]
+    
+    // 取得台灣時間的日期字串 (避免時區問題)
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
 
     if (error || !data) {
+      // 初始化新用戶
       await saveUserData(uid, 0, 0, 0, 'apple', [], today)
     } else {
       currentTreeId.value = data.current_tree_id || 'apple'
       unlockedTrees.value = data.unlocked_trees || []
       
-      // 載入設定值
-      if (data.reminder_time) {
-        // 資料庫存的是 HH:MM:SS，我們只需要 HH:MM
-        tempSettings.value.time = data.reminder_time.slice(0, 5)
-      }
-      if (data.is_reminder_enabled !== undefined) {
-        tempSettings.value.enabled = data.is_reminder_enabled
-      }
+      // 設定載入
+      if (data.reminder_time) tempSettings.value.time = data.reminder_time.slice(0, 5)
+      if (data.is_reminder_enabled !== undefined) tempSettings.value.enabled = data.is_reminder_enabled
 
-      let loadedSavedGrowth = data.saved_growth || 0
+      // 🌟 判斷是否跨日 (改用 last_active_date)
+      const lastDate = data.last_active_date || data.last_updated // 相容舊資料
       
-      if (data.last_updated !== today) {
-        // 跨日結算
-        const lastDayWater = data.water_count || 0
-        const lastDayLeg = data.leg_count || 0
+      if (lastDate !== today) {
+        // === 這是新的一天 ===
+        console.log('跨日結算中...')
+        
+        // 1. 結算昨天的成長值
+        const lastDayWater = data.daily_water || data.water_count || 0
+        const lastDayLeg = data.daily_leg || data.leg_count || 0
+        
         const wScore = Math.min(lastDayWater / WATER_GOAL, 1) * POINTS_PER_WATER_GOAL
         const lScore = lastDayLeg * (POINTS_PER_LEG_GOAL / LEG_GOAL)
         const lastDayPoints = Math.min(wScore + lScore, DAILY_MAX_POINTS)
         
-        loadedSavedGrowth = Math.min(loadedSavedGrowth + lastDayPoints, 100)
+        // 2. 累加到 savedGrowth
+        let newSavedGrowth = (data.saved_growth || 0) + lastDayPoints
+        if (newSavedGrowth > 100) newSavedGrowth = 100 // 上限 100
+        
+        // 3. 重置今日數據
         waterCount.value = 0
         legCount.value = 0
-        savedGrowth.value = loadedSavedGrowth
-        await syncToCloud()
+        savedGrowth.value = newSavedGrowth
+        
+        // 4. 存回資料庫 (同步歸零狀態)
+        await saveUserData(userId.value, 0, 0, newSavedGrowth, currentTreeId.value, unlockedTrees.value, today)
+        
       } else {
-        waterCount.value = data.water_count
-        legCount.value = data.leg_count || 0
-        savedGrowth.value = loadedSavedGrowth
+        // === 還是同一天 ===
+        // 優先讀取 daily_water，如果沒有才讀 water_count
+        waterCount.value = data.daily_water !== null ? data.daily_water : data.water_count
+        legCount.value = data.daily_leg !== null ? data.daily_leg : data.leg_count
+        savedGrowth.value = data.saved_growth || 0
       }
     }
   } catch (e) { console.error(e) } 
@@ -296,16 +308,28 @@ const loadUserData = async (uid) => {
 
 const saveUserData = async (uid, water, legs, saved, treeId, unlocked, date) => {
   if (!uid) return
-  // 這裡不更新設定欄位，避免覆蓋
+  
   await supabase.from('users').upsert({
     user_id: uid,
-    water_count: water,
-    leg_count: legs,
+    
+    // 累積總量 (如果您想保留歷史紀錄，建議還是存一下，雖然這裡邏輯主要靠 daily)
+    // 但為了簡單，我們假設 water_count 在這裡代表「今日喝水量」
+    // 如果您的資料庫 water_count 是用來存總累積的，這裡邏輯要改。
+    // 根據您的 Tree 邏輯，saved_growth 已經處理了累積，所以這裡 water 視為今日數據。
+    
+    // 👇 關鍵修改：同時寫入舊欄位(相容性)與新欄位(給提醒用)
+    water_count: water,       // 前端畫面上的數值
+    leg_count: legs,          // 前端畫面上的數值
+    
+    daily_water: water,       // 🌟 新增：給 remind.js 讀的
+    daily_leg: legs,          // 🌟 新增：給 remind.js 讀的
+    last_active_date: date,   // 🌟 新增：給 remind.js 判斷日期
+    
     saved_growth: saved,
     current_tree_id: treeId,
     unlocked_trees: unlocked,
-    last_updated: date
-  }).select() // 加 select 避免回傳空值報錯
+    last_updated: date        // 舊欄位保留無妨
+  }).select()
 }
 
 const handleWater = async () => {
@@ -348,8 +372,16 @@ const closeHarvestModal = async () => {
 
 const syncToCloud = async () => {
   if (userId.value) {
-    const today = new Date().toISOString().split('T')[0]
-    await saveUserData(userId.value, waterCount.value, legCount.value, savedGrowth.value, currentTreeId.value, unlockedTrees.value, today)
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+    await saveUserData(
+      userId.value, 
+      waterCount.value, 
+      legCount.value, 
+      savedGrowth.value, 
+      currentTreeId.value, 
+      unlockedTrees.value, 
+      today
+    )
   }
 }
 

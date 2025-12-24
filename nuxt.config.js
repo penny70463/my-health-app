@@ -4,7 +4,6 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-12-22',
   // 關閉 Nuxt 開發工具，避免舊環境報錯
   devtools: { enabled: false },
-  
   // 載入 Tailwind
   modules: [
     '@nuxtjs/tailwindcss',
@@ -44,12 +43,17 @@ export default defineNuxtConfig({
     url: process.env.SUPABASE_URL,
     key: process.env.SUPABASE_KEY
   },
+  ssr: false,
   nitro: {
     preset: 'vercel'
   },
-  routeRules: {
-    //這表示：所有的網頁頁面 (/**) 都不使用 SSR，只在瀏覽器端渲染
-    '/**': { ssr: false } 
-  }
+  runtimeConfig: {
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseKey: process.env.SUPABASE_KEY,
+      liffId: '2008750422-1gfKbzUK' 
+    }
+  },
+  debug: true,
 })
 

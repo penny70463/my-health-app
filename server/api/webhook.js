@@ -26,22 +26,21 @@ export default defineEventHandler(async (event) => {
     // 🔍 監聽 "follow" 事件 (使用者加入好友/解除封鎖)
     if (lineEvent.type === 'follow') {
       const userId = lineEvent.source.userId
-      const replyToken = lineEvent.replyToken
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
 
       console.log('新朋友加入！User ID:', userId)
 
-      // A. 將使用者存入資料庫 (如果不存在的話)
       const { error } = await supabase
         .from('users')
         .upsert({ 
           user_id: userId,
-          is_reminder_enabled: true, // 預設開啟提醒
-          last_updated: new Date().toISOString().split('T')[0]
+          is_reminder_enabled: true,
+          reminder_time: '08:00', // 🌟 設定預設提醒時間
+          daily_water: 0,         // 🌟 初始化每日數據
+          daily_leg: 0,           // 🌟 初始化每日數據
+          last_active_date: today // 🌟 設定最後活躍日期
         }, { onConflict: 'user_id' })
-        .select()
-
-      // B. 發送歡迎訊息 (可選)
-      // 這裡需要用 replyToken 回覆，或者直接忽略，讓歡迎詞由 LINE 後台設定就好
+      console.log('error', error)
     }
 
     // 🔍 監聽 "unfollow" 事件 (使用者封鎖/刪除好友)
