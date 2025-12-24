@@ -19,11 +19,15 @@ export default defineEventHandler(async (event) => {
   // 初始化 Supabase
   const supabase = createClient(supabaseUrl, supabaseKey)
 
+  // 1. 取得「台灣時間」的今天日期 (格式 YYYY-MM-DD)
+  // 這是為了跟資料庫的 last_active_date 比對
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+
   // 2. 找出需要提醒的用戶
-  // 條件：is_reminder_enabled 為 true
+  // 多選取 daily_water, daily_leg, last_active_date
   const { data: users, error } = await supabase
     .from('users')
-    .select('user_id, water_count, leg_count')
+    .select('user_id, daily_water, daily_leg, last_active_date')
     .eq('is_reminder_enabled', true)
 
   if (error) {
@@ -32,59 +36,59 @@ export default defineEventHandler(async (event) => {
 
   const results = []
 
-  // 3. 逐一檢查並發送 LINE 訊息
+  // 3. 逐一檢查
   for (const user of users) {
-    // 檢查是否已達標 (如果今天已經做完了，就不提醒)
-    // 這裡的邏輯是：只要有一項沒完成，就提醒
-    const isWaterDone = user.water_count >= 2000
-    const isLegDone = user.leg_count >= 2
+    let currentWater = 0
+    let currentLeg = 0
+
+    // 🌟 關鍵邏輯：判斷日期 🌟
+    // 如果資料庫紀錄的日期是「今天」，才採信 daily 數值
+    // 如果日期是舊的 (null 或 昨天)，代表今天還沒動，數值視為 0
+    if (user.last_active_date === today) {
+      currentWater = user.daily_water || 0
+      currentLeg = user.daily_leg || 0
+    } else {
+      currentWater = 0
+      currentLeg = 0
+    }
+
+    // 檢查是否達標
+    const isWaterDone = currentWater >= 2000
+    const isLegDone = currentLeg >= 2
     
-    // 如果兩項都完成了，就跳過這位使用者
+    // 兩項都完成，就不吵他
     if (isWaterDone && isLegDone) {
       continue 
     }
 
-    // 準備訊息內容
+    // 準備訊息
     const messages = [
       {
         type: 'text',
-        text: `🌳 果園小管家提醒\n\n親愛的園丁，今天的任務還沒完成喔！\n\n💧 喝水：${user.water_count}/2000 cc\n🦵 抬腿：${user.leg_count}/2 組\n\n快回來照顧您的果樹吧！💪\n\n'https://liff.line.me/2008750422-1gfKbzUK'`
+        text: `🌳 果園小管家提醒\n\n親愛的園丁，今天的任務還沒完成喔！\n\n💧 喝水：${currentWater}/2000 cc\n🦵 抬腿：${currentLeg}/2 組\n\n快回來照顧您的果樹吧！💪\n\nhttps://liff.line.me/2008750422-1gfKbzUK`
       }
     ]
 
-    // 呼叫 LINE Messaging API (Push Message)
+    // 發送 LINE 訊息
     try {
-      const resp = await fetch('https://api.line.me/v2/bot/message/push', {
+      await fetch('https://api.line.me/v2/bot/message/push', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${lineToken}`
         },
         body: JSON.stringify({
-          to: user.user_id, // 發送給這個 User ID
+          to: user.user_id,
           messages: messages
         })
       })
       
-      const result = await resp.json()
-      
-      // 紀錄發送結果
-      results.push({ 
-        userId: user.user_id, 
-        status: resp.status, 
-        message: result.message || 'Sent' 
-      })
-      
+      results.push({ userId: user.user_id, status: 'Sent' })
     } catch (e) {
       console.error('Send Error', e)
       results.push({ userId: user.user_id, error: e.message })
     }
   }
 
-  // 回傳執行結果給瀏覽器
-  return { 
-    success: true, 
-    sent_count: results.length, 
-    details: results 
-  }
+  return { success: true, sent_count: results.length, details: results }
 })
