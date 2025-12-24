@@ -24,14 +24,14 @@ export default defineEventHandler(async (event) => {
   console.log(`🕒 目前台灣時間：${today} ${currentHour}:00`)
 
   // 2. 查詢資料庫
-  // 先把條件印出來確認
-  console.log(`🔍 正在搜尋條件：is_reminder_enabled=true 且 reminder_time 為 ${currentHour}:xx`)
+  const queryTime = `${currentHour}:00:00`
+  console.log(`🔍 正在搜尋條件：is_reminder_enabled=true 且 reminder_time 為 ${queryTime}`)
 
   const { data: users, error } = await supabase
     .from('users')
     .select('user_id, daily_water, daily_leg, last_active_date, reminder_time')
     .eq('is_reminder_enabled', true)
-    .ilike('reminder_time', `${currentHour}:%`)
+    .eq('reminder_time', queryTime)
 
   if (error) {
     console.error('❌ 資料庫查詢失敗:', error.message)
