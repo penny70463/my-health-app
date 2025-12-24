@@ -137,11 +137,24 @@
           <p class="text-xs text-gray-400">
             * 系統將會在您指定的時間，檢查您是否尚未達成今日目標，並透過 LINE 傳送溫馨提醒。
           </p>
+
+          <div class="pt-2 border-t border-gray-100">
+            <p class="text-xs text-center text-slate-500 mb-2">覺得好用嗎？邀請朋友一起來種樹！🌱</p>
+            <a 
+              href="https://line.me/R/ti/p/@928vmpwo"
+              target="_blank"
+              class="flex items-center justify-center gap-2 w-full py-2 bg-[#06C755]/10 text-[#06C755] border border-[#06C755] rounded-xl font-bold hover:bg-[#06C755] hover:text-white transition duration-300"
+            >
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21.15 8.23a10.22 10.22 0 00-1.63-3.64 10.15 10.15 0 00-3.63-2.6 11.2 11.2 0 00-4.66-1c-2.48 0-4.68.8-6.33 2.3A10.17 10.17 0 001.96 9.4C.68 12.35 1 15.63 2.8 18.28c.3.43.3.6.2.98-.32 1.2-.7 2.37-1.16 3.53a.85.85 0 00.94 1.15c1.47-.33 2.92-.73 4.36-1.17.4-.12.75-.07 1.1.13a10.87 10.87 0 008.28.32 10.27 10.27 0 006.18-5.74c1.24-3.1.8-6.34-1.55-9.25z"/></svg>
+              加入好友 / 分享連結
+            </a>
+          </div>
+
         </div>
 
         <button 
           @click="saveSettings"
-          class="w-full bg-orchardGreen text-white font-bold py-3 rounded-xl hover:bg-green-600 transition"
+          class="w-full bg-orchardGreen text-white font-bold py-3 rounded-xl hover:bg-green-600 transition shadow-lg shadow-green-100"
         >
           儲存設定
         </button>
