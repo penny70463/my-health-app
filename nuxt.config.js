@@ -2,7 +2,6 @@
 export default defineNuxtConfig({
   // 設定為今天或固定的日期，消除警告
   compatibilityDate: '2024-12-22',
-  ssr: false,
   // 關閉 Nuxt 開發工具，避免舊環境報錯
   devtools: { enabled: false },
   
