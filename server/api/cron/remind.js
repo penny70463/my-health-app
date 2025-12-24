@@ -94,11 +94,18 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  return { 
+  // 1. 先把結果存成一個變數
+  const responseData = { 
     success: true, 
     check_time: `${today} ${currentHour}:00`,
     matched_users: users.length,
     sent_count: results.length, 
     details: results 
   }
+
+  // 2. 🌟 關鍵：用 console.log 印出來 (JSON.stringify 讓格式好看一點)
+  console.log('📊 Cron Job 執行結果報告:', JSON.stringify(responseData, null, 2))
+
+  // 3. 回傳給 Vercel
+  return responseData
 })
