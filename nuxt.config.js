@@ -46,6 +46,10 @@ export default defineNuxtConfig({
   },
   nitro: {
     preset: 'vercel'
+  },
+  routeRules: {
+    //這表示：所有的網頁頁面 (/**) 都不使用 SSR，只在瀏覽器端渲染
+    '/**': { ssr: false } 
   }
 })
 
