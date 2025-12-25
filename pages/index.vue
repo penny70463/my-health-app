@@ -60,8 +60,16 @@
           <div class="text-6xl opacity-0 animate-rake-fade">🧹</div>
         </div>
 
-        <div class="absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-1 rounded-full border border-yellow-300 z-30">
-          總成長 {{ totalProgress.toFixed(1) }}%
+        <div 
+          class="absolute top-0 right-0 text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm z-30 transition-colors duration-300"
+          :class="[
+            isWaterLack 
+              ? 'bg-orange-100 text-orange-600 border-orange-300 animate-pulse' // 缺水時亮橘燈
+              : 'bg-yellow-100 text-yellow-700 border-yellow-300' // 平常亮黃燈
+          ]"
+        >
+          <span v-if="isWaterLack">🌱 差最後一步！</span>
+          <span v-else>總成長 {{ displayProgress.toFixed(1) }}%</span>
         </div>
       </div>
 
@@ -78,7 +86,7 @@
             <span class="flex items-center gap-1">💧 今日喝水 <span class="text-xs text-gray-400">(目標 2000cc)</span></span>
             <span class="font-bold text-blue-600">{{ waterCount }} cc</span>
           </div>
-          <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+          <div :class="['w-full bg-gray-200 rounded-full h-2.5 overflow-hidden', isWaterLack ? 'ring-2 ring-orange-300 ring-offset-1' : '']">
             <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-500" :style="{ width: Math.min((waterCount / WATER_GOAL) * 100, 100) + '%' }"></div>
           </div>
         </div>
@@ -93,9 +101,24 @@
         </div>
       </div>
 
-      <div class="h-24"> <div v-if="treeStage < 4" class="grid grid-cols-2 gap-4 h-full">
-          <TaskButton label="喝水 250cc" icon="💧" color="#6BBF59" @click="handleWater" :disabled="isLoading" />
-          <TaskButton label="抬腿 20 下" subLabel="(完成 1 組)" icon="🦵" color="#FFB347" @click="handleLegs" :disabled="isLoading" />
+      <div class="h-24">
+        <div v-if="treeStage < 4" class="grid grid-cols-2 gap-4 h-full">
+          <TaskButton 
+            label="喝水 250cc" 
+            icon="💧" 
+            color="#6BBF59" 
+            @click="handleWater" 
+            :disabled="isLoading" 
+            :class="isWaterLack ? 'animate-bounce border-2 border-orange-400' : ''"
+          />
+          <TaskButton 
+            label="抬腿 20 下" 
+            subLabel="(完成 1 組)" 
+            icon="🦵" 
+            color="#FFB347" 
+            @click="handleLegs" 
+            :disabled="isLoading" 
+          />
         </div>
 
         <div v-else class="flex items-center justify-center h-full animate-bounce-in">
@@ -107,11 +130,11 @@
             <span>採收果實 & 種新種子</span>
           </button>
         </div>
-
       </div>
 
-      <div v-if="isWaterLack && totalProgress >= 100" class="bg-orange-100 text-orange-600 px-4 py-2 rounded-lg text-sm font-bold text-center animate-pulse border border-orange-200">
-        🚧 成長值已滿！但今日必須<span class="underline">喝滿 2000cc 水</span>才能收成喔！
+      <div v-if="isWaterLack" class="bg-orange-100 text-orange-700 px-4 py-3 rounded-xl text-sm font-bold text-center animate-pulse border-2 border-orange-200 shadow-sm flex items-center justify-center gap-2">
+        <span>☝️</span>
+        <span>成長值已滿！請喝滿 2000cc 水來收成！</span>
       </div>
 
       <p class="text-xs text-center text-slate-400 mt-2">
@@ -268,9 +291,19 @@ const dailyPoints = computed(() => {
 })
 
 const isDailyCapped = computed(() => dailyPoints.value >= DAILY_MAX_POINTS)
+
+// 🌟 邏輯用的真實進度
 const totalProgress = computed(() => Math.min(savedGrowth.value + dailyPoints.value, 100))
 
-// 🌟 修改：成長階段邏輯 (讓 50% 就能變中樹)
+// 🌟 顯示用的進度 (UX優化：沒喝滿水只會顯示 99.9%)
+const displayProgress = computed(() => {
+  const p = totalProgress.value
+  const isWaterGoalReached = waterCount.value >= WATER_GOAL
+  // 如果分數到了 100 但水沒喝夠，強制卡在 99.9%
+  if (p >= 100 && !isWaterGoalReached) return 99.9
+  return p
+})
+
 const treeStage = computed(() => {
   const p = totalProgress.value
   const isWaterGoalReached = waterCount.value >= WATER_GOAL
@@ -288,6 +321,7 @@ const treeStage = computed(() => {
   return 1 
 })
 
+// 缺水判斷：滿分 + 沒喝夠水
 const isWaterLack = computed(() => totalProgress.value >= 100 && waterCount.value < WATER_GOAL)
 
 const currentTreeImage = computed(() => {
@@ -295,7 +329,7 @@ const currentTreeImage = computed(() => {
   return currentTreeConfig.value.stages[index]
 })
 
-// === 核心功能 ===
+// Functions
 
 const toggleTime = (timeStr) => {
   const index = tempSettings.value.times.indexOf(timeStr)
@@ -418,10 +452,8 @@ const handleLegs = async () => {
   await syncToCloud()
 }
 
-// 🌟 修改：不再自動彈窗，改由使用者點擊按鈕觸發
 const checkGrowth = () => {
-  // 原本這裡有 setTimeout 自動 harvest，現在留空即可
-  // 畫面會因為 treeStage 變成 4 而自動切換成「收成按鈕」
+  // 自動彈窗邏輯已移除，改由 UI 按鈕觸發
 }
 
 const handleHarvest = async () => {
