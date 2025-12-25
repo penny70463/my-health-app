@@ -93,9 +93,21 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <TaskButton label="喝水 250cc" icon="💧" color="#6BBF59" @click="handleWater" :disabled="isLoading" />
-        <TaskButton label="抬腿 20 下" subLabel="(完成 1 組)" icon="🦵" color="#FFB347" @click="handleLegs" :disabled="isLoading" />
+      <div class="h-24"> <div v-if="treeStage < 4" class="grid grid-cols-2 gap-4 h-full">
+          <TaskButton label="喝水 250cc" icon="💧" color="#6BBF59" @click="handleWater" :disabled="isLoading" />
+          <TaskButton label="抬腿 20 下" subLabel="(完成 1 組)" icon="🦵" color="#FFB347" @click="handleLegs" :disabled="isLoading" />
+        </div>
+
+        <div v-else class="flex items-center justify-center h-full animate-bounce-in">
+          <button 
+            @click="handleHarvest"
+            class="w-full h-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xl font-bold rounded-2xl shadow-lg transform transition active:scale-95 flex flex-col items-center justify-center gap-1 border-4 border-white ring-4 ring-yellow-200"
+          >
+            <span class="text-3xl">🧺</span>
+            <span>採收果實 & 種新種子</span>
+          </button>
+        </div>
+
       </div>
 
       <div v-if="isWaterLack && totalProgress >= 100" class="bg-orange-100 text-orange-600 px-4 py-2 rounded-lg text-sm font-bold text-center animate-pulse border border-orange-200">
@@ -146,8 +158,8 @@
                 :class="[
                   'py-2 rounded-lg text-sm font-bold transition-all border',
                   tempSettings.times.includes(`${(hour-1).toString().padStart(2, '0')}:00`)
-                    ? 'bg-orchardGreen text-white border-orchardGreen shadow-md scale-105' // 選中
-                    : 'bg-white text-slate-500 border-slate-200 hover:bg-gray-50' // 未選
+                    ? 'bg-orchardGreen text-white border-orchardGreen shadow-md scale-105'
+                    : 'bg-white text-slate-500 border-slate-200 hover:bg-gray-50'
                 ]"
               >
                 {{ (hour-1).toString().padStart(2, '0') }}
@@ -228,7 +240,7 @@ const { $liff } = useNuxtApp()
 const userId = ref(null)
 const isLoading = ref(true)
 const showRakeEffect = ref(false)
-const showWaterEffect = ref(false) // 🌟 新增：澆水特效開關
+const showWaterEffect = ref(false) 
 const showHarvestModal = ref(false)
 const showSettingsModal = ref(false)
 
@@ -239,10 +251,10 @@ const savedGrowth = ref(0)
 const currentTreeId = ref('apple')
 const unlockedTrees = ref([])
 
-// 設定狀態 (使用陣列來支援複選)
+// 設定狀態 (使用陣列支援複選)
 const tempSettings = ref({
   enabled: true,
-  times: [] // 🌟 這裡存放選中的時間，例如 ["08:00", "12:00"]
+  times: []
 })
 
 // === Computed ===
@@ -258,12 +270,21 @@ const dailyPoints = computed(() => {
 const isDailyCapped = computed(() => dailyPoints.value >= DAILY_MAX_POINTS)
 const totalProgress = computed(() => Math.min(savedGrowth.value + dailyPoints.value, 100))
 
+// 🌟 修改：成長階段邏輯 (讓 50% 就能變中樹)
 const treeStage = computed(() => {
   const p = totalProgress.value
   const isWaterGoalReached = waterCount.value >= WATER_GOAL
+  
+  // 階段 4: 滿分 + 喝水達標 (顯示收成按鈕)
   if (p >= 100) return isWaterGoalReached ? 4 : 3
-  if (p >= 75) return 3 
-  if (p >= 25) return 2 
+  
+  // 階段 3: 超過 50% (中樹)
+  if (p >= 50) return 3 
+  
+  // 階段 2: 超過 20% (小樹)
+  if (p >= 20) return 2 
+  
+  // 階段 1: 種子
   return 1 
 })
 
@@ -276,13 +297,12 @@ const currentTreeImage = computed(() => {
 
 // === 核心功能 ===
 
-// 🌟 新增：切換時間選擇的邏輯 (UI 按鈕觸發)
 const toggleTime = (timeStr) => {
   const index = tempSettings.value.times.indexOf(timeStr)
   if (index === -1) {
-    tempSettings.value.times.push(timeStr) // 沒選過 -> 加入
+    tempSettings.value.times.push(timeStr)
   } else {
-    tempSettings.value.times.splice(index, 1) // 選過了 -> 移除
+    tempSettings.value.times.splice(index, 1)
   }
 }
 
@@ -292,8 +312,6 @@ const openSettings = () => {
 
 const saveSettings = async () => {
   if (!userId.value) return
-  
-  // 🌟 將陣列轉為逗號分隔字串 (例: "08:00,12:00")
   const timeString = tempSettings.value.times.sort().join(',')
 
   try {
@@ -301,12 +319,11 @@ const saveSettings = async () => {
       .from('users')
       .update({
         is_reminder_enabled: tempSettings.value.enabled,
-        reminder_time: timeString // 存入 Text 欄位
+        reminder_time: timeString
       })
       .eq('user_id', userId.value)
 
     if (error) throw error
-    
     alert('設定已儲存！')
     showSettingsModal.value = false
   } catch (e) {
@@ -327,18 +344,16 @@ const loadUserData = async (uid) => {
       currentTreeId.value = data.current_tree_id || 'apple'
       unlockedTrees.value = data.unlocked_trees || []
       
-      // 🌟 載入設定：將字串轉回陣列
       if (data.reminder_time) {
         tempSettings.value.times = data.reminder_time.includes(',') 
           ? data.reminder_time.split(',') 
           : [data.reminder_time]
       } else {
-        tempSettings.value.times = ['08:00'] // 預設值
+        tempSettings.value.times = ['08:00']
       }
       
       if (data.is_reminder_enabled !== undefined) tempSettings.value.enabled = data.is_reminder_enabled
 
-      // 判斷跨日
       const lastDate = data.last_active_date || data.last_updated
       
       if (lastDate !== today) {
@@ -386,14 +401,11 @@ const saveUserData = async (uid, water, legs, saved, treeId, unlocked, date) => 
 
 const handleWater = async () => {
   waterCount.value += WATER_PER_CLICK
-  
-  // 🌟 新增：觸發澆水動畫
   showWaterEffect.value = false
   nextTick(() => { 
     showWaterEffect.value = true; 
-    setTimeout(() => showWaterEffect.value = false, 1000) // 1秒後關閉
+    setTimeout(() => showWaterEffect.value = false, 1000) 
   })
-
   checkGrowth()
   await syncToCloud()
 }
@@ -406,10 +418,10 @@ const handleLegs = async () => {
   await syncToCloud()
 }
 
+// 🌟 修改：不再自動彈窗，改由使用者點擊按鈕觸發
 const checkGrowth = () => {
-  if (treeStage.value === 4 && !showHarvestModal.value) {
-    setTimeout(() => handleHarvest(), 500)
-  }
+  // 原本這裡有 setTimeout 自動 harvest，現在留空即可
+  // 畫面會因為 treeStage 變成 4 而自動切換成「收成按鈕」
 }
 
 const handleHarvest = async () => {
@@ -475,7 +487,7 @@ onMounted(async () => {
 }
 .animate-rake-fade { animation: rakeFade 800ms ease-out forwards; }
 
-/* 🌟 新增：澆水水滴動畫 */
+/* 澆水水滴動畫 */
 @keyframes waterDrop {
   0% { transform: translateY(0) scale(0.5); opacity: 0; }
   20% { opacity: 1; }
