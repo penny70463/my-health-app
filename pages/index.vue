@@ -36,16 +36,31 @@
         </p>
       </div>
 
-      <div class="relative w-full flex justify-center py-2 h-48 items-end">
+      <div class="relative w-full flex justify-center py-2 h-48 items-end overflow-hidden rounded-2xl">
         <img 
           :src="currentTreeImage" 
           alt="Tree" 
-          class="h-44 w-auto object-contain transition-all duration-700 ease-in-out"
+          class="h-44 w-auto object-contain transition-all duration-700 ease-in-out relative z-10"
         />
-        <div v-if="showRakeEffect" class="pointer-events-none absolute inset-0 flex items-center justify-center">
+        
+        <div v-if="showWaterEffect" class="pointer-events-none absolute inset-0 z-20">
+          <div v-for="i in 6" :key="i"
+               class="absolute text-blue-400 text-2xl opacity-0 animate-water-drop"
+               :style="{
+                 left: `${20 + Math.random() * 60}%`, // 隨機分佈
+                 animationDelay: `${Math.random() * 0.5}s`, // 隨機延遲
+                 top: '-20px'
+               }"
+          >
+            💧
+          </div>
+        </div>
+
+        <div v-if="showRakeEffect" class="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
           <div class="text-6xl opacity-0 animate-rake-fade">🧹</div>
         </div>
-        <div class="absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-1 rounded-full border border-yellow-300">
+
+        <div class="absolute top-0 right-0 bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-1 rounded-full border border-yellow-300 z-30">
           總成長 {{ totalProgress.toFixed(1) }}%
         </div>
       </div>
@@ -115,23 +130,32 @@
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm text-slate-500">選擇提醒時間 (整點)</label>
-            <div class="relative">
-              <select 
-                v-model="tempSettings.time"
-                :disabled="!tempSettings.enabled"
-                class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-lg font-bold text-slate-700 focus:ring-2 focus:ring-green-500 outline-none appearance-none disabled:opacity-50"
-              >
-                <option v-for="hour in 24" :key="hour" :value="`${(hour-1).toString().padStart(2, '0')}:00`">
-                  {{ (hour-1).toString().padStart(2, '0') }}:00
-                </option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+            <div class="flex justify-between items-end">
+              <label class="block text-sm text-slate-500">選擇提醒時間 (可複選)</label>
+              <span class="text-xs font-bold text-orchardGreen">
+                已選 {{ tempSettings.times.length }} 個時段
+              </span>
             </div>
+            
+            <div class="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
+              <button
+                v-for="hour in 24"
+                :key="hour"
+                @click="toggleTime(`${(hour-1).toString().padStart(2, '0')}:00`)"
+                :disabled="!tempSettings.enabled"
+                :class="[
+                  'py-2 rounded-lg text-sm font-bold transition-all border',
+                  tempSettings.times.includes(`${(hour-1).toString().padStart(2, '0')}:00`)
+                    ? 'bg-orchardGreen text-white border-orchardGreen shadow-md scale-105' // 選中
+                    : 'bg-white text-slate-500 border-slate-200 hover:bg-gray-50' // 未選
+                ]"
+              >
+                {{ (hour-1).toString().padStart(2, '0') }}
+              </button>
+            </div>
+            <p class="text-xs text-gray-400 text-center mt-1">
+              點選綠色按鈕可取消選擇
+            </p>
           </div>
           
           <p class="text-xs text-gray-400">
@@ -180,6 +204,14 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
 
+// 輔助函式：隨機取得下一個樹種
+const getRandomTreeId = (currentId) => {
+  const keys = Object.keys(TREE_DATA)
+  const available = keys.filter(k => k !== currentId)
+  if (available.length === 0) return currentId 
+  return available[Math.floor(Math.random() * available.length)]
+}
+
 // === 常數 ===
 const WATER_GOAL = 2000
 const WATER_PER_CLICK = 250
@@ -196,8 +228,9 @@ const { $liff } = useNuxtApp()
 const userId = ref(null)
 const isLoading = ref(true)
 const showRakeEffect = ref(false)
+const showWaterEffect = ref(false) // 🌟 新增：澆水特效開關
 const showHarvestModal = ref(false)
-const showSettingsModal = ref(false) // 設定彈窗開關
+const showSettingsModal = ref(false)
 
 // 資料庫狀態
 const waterCount = ref(0)
@@ -206,10 +239,10 @@ const savedGrowth = ref(0)
 const currentTreeId = ref('apple')
 const unlockedTrees = ref([])
 
-// 設定狀態 (暫存)
+// 設定狀態 (使用陣列來支援複選)
 const tempSettings = ref({
   enabled: true,
-  time: '08:00'
+  times: [] // 🌟 這裡存放選中的時間，例如 ["08:00", "12:00"]
 })
 
 // === Computed ===
@@ -243,21 +276,32 @@ const currentTreeImage = computed(() => {
 
 // === 核心功能 ===
 
-// 打開設定視窗 (從資料庫狀態同步到暫存變數)
+// 🌟 新增：切換時間選擇的邏輯 (UI 按鈕觸發)
+const toggleTime = (timeStr) => {
+  const index = tempSettings.value.times.indexOf(timeStr)
+  if (index === -1) {
+    tempSettings.value.times.push(timeStr) // 沒選過 -> 加入
+  } else {
+    tempSettings.value.times.splice(index, 1) // 選過了 -> 移除
+  }
+}
+
 const openSettings = () => {
   showSettingsModal.value = true
 }
 
-// 儲存設定到資料庫
 const saveSettings = async () => {
   if (!userId.value) return
   
+  // 🌟 將陣列轉為逗號分隔字串 (例: "08:00,12:00")
+  const timeString = tempSettings.value.times.sort().join(',')
+
   try {
     const { error } = await supabase
       .from('users')
       .update({
         is_reminder_enabled: tempSettings.value.enabled,
-        reminder_time: tempSettings.value.time
+        reminder_time: timeString // 存入 Text 欄位
       })
       .eq('user_id', userId.value)
 
@@ -275,51 +319,45 @@ const loadUserData = async (uid) => {
   try {
     isLoading.value = true
     const { data, error } = await supabase.from('users').select('*').eq('user_id', uid).single()
-    
-    // 取得台灣時間的日期字串 (避免時區問題)
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
 
     if (error || !data) {
-      // 初始化新用戶
       await saveUserData(uid, 0, 0, 0, 'apple', [], today)
     } else {
       currentTreeId.value = data.current_tree_id || 'apple'
       unlockedTrees.value = data.unlocked_trees || []
       
-      // 設定載入
-      if (data.reminder_time) tempSettings.value.time = data.reminder_time.slice(0, 5)
+      // 🌟 載入設定：將字串轉回陣列
+      if (data.reminder_time) {
+        tempSettings.value.times = data.reminder_time.includes(',') 
+          ? data.reminder_time.split(',') 
+          : [data.reminder_time]
+      } else {
+        tempSettings.value.times = ['08:00'] // 預設值
+      }
+      
       if (data.is_reminder_enabled !== undefined) tempSettings.value.enabled = data.is_reminder_enabled
 
-      // 🌟 判斷是否跨日 (改用 last_active_date)
-      const lastDate = data.last_active_date || data.last_updated // 相容舊資料
+      // 判斷跨日
+      const lastDate = data.last_active_date || data.last_updated
       
       if (lastDate !== today) {
-        // === 這是新的一天 ===
         console.log('跨日結算中...')
-        
-        // 1. 結算昨天的成長值
         const lastDayWater = data.daily_water || data.water_count || 0
         const lastDayLeg = data.daily_leg || data.leg_count || 0
-        
         const wScore = Math.min(lastDayWater / WATER_GOAL, 1) * POINTS_PER_WATER_GOAL
         const lScore = lastDayLeg * (POINTS_PER_LEG_GOAL / LEG_GOAL)
         const lastDayPoints = Math.min(wScore + lScore, DAILY_MAX_POINTS)
         
-        // 2. 累加到 savedGrowth
         let newSavedGrowth = (data.saved_growth || 0) + lastDayPoints
-        if (newSavedGrowth > 100) newSavedGrowth = 100 // 上限 100
+        if (newSavedGrowth > 100) newSavedGrowth = 100
         
-        // 3. 重置今日數據
         waterCount.value = 0
         legCount.value = 0
         savedGrowth.value = newSavedGrowth
-        
-        // 4. 存回資料庫 (同步歸零狀態)
         await saveUserData(userId.value, 0, 0, newSavedGrowth, currentTreeId.value, unlockedTrees.value, today)
         
       } else {
-        // === 還是同一天 ===
-        // 優先讀取 daily_water，如果沒有才讀 water_count
         waterCount.value = data.daily_water !== null ? data.daily_water : data.water_count
         legCount.value = data.daily_leg !== null ? data.daily_leg : data.leg_count
         savedGrowth.value = data.saved_growth || 0
@@ -334,29 +372,28 @@ const saveUserData = async (uid, water, legs, saved, treeId, unlocked, date) => 
   
   await supabase.from('users').upsert({
     user_id: uid,
-    
-    // 累積總量 (如果您想保留歷史紀錄，建議還是存一下，雖然這裡邏輯主要靠 daily)
-    // 但為了簡單，我們假設 water_count 在這裡代表「今日喝水量」
-    // 如果您的資料庫 water_count 是用來存總累積的，這裡邏輯要改。
-    // 根據您的 Tree 邏輯，saved_growth 已經處理了累積，所以這裡 water 視為今日數據。
-    
-    // 👇 關鍵修改：同時寫入舊欄位(相容性)與新欄位(給提醒用)
-    water_count: water,       // 前端畫面上的數值
-    leg_count: legs,          // 前端畫面上的數值
-    
-    daily_water: water,       // 🌟 新增：給 remind.js 讀的
-    daily_leg: legs,          // 🌟 新增：給 remind.js 讀的
-    last_active_date: date,   // 🌟 新增：給 remind.js 判斷日期
-    
+    water_count: water, 
+    leg_count: legs,
+    daily_water: water,
+    daily_leg: legs,
+    last_active_date: date,
     saved_growth: saved,
     current_tree_id: treeId,
     unlocked_trees: unlocked,
-    last_updated: date        // 舊欄位保留無妨
+    last_updated: date
   }).select()
 }
 
 const handleWater = async () => {
   waterCount.value += WATER_PER_CLICK
+  
+  // 🌟 新增：觸發澆水動畫
+  showWaterEffect.value = false
+  nextTick(() => { 
+    showWaterEffect.value = true; 
+    setTimeout(() => showWaterEffect.value = false, 1000) // 1秒後關閉
+  })
+
   checkGrowth()
   await syncToCloud()
 }
@@ -430,12 +467,24 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 掃把動畫 */
 @keyframes rakeFade {
   0% { opacity: 0; transform: translateY(10px) scale(0.8); }
   50% { opacity: 1; transform: translateY(0) scale(1.1); }
   100% { opacity: 0; transform: translateY(-10px) scale(1); }
 }
 .animate-rake-fade { animation: rakeFade 800ms ease-out forwards; }
+
+/* 🌟 新增：澆水水滴動畫 */
+@keyframes waterDrop {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(120px) scale(1); opacity: 0; }
+}
+.animate-water-drop { animation: waterDrop 1s ease-in forwards; }
+
+/* 彈窗動畫 */
 @keyframes bounceIn {
   0% { transform: scale(0.3); opacity: 0; }
   50% { transform: scale(1.05); opacity: 1; }
@@ -443,4 +492,10 @@ onMounted(async () => {
   100% { transform: scale(1); }
 }
 .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+
+/* 自訂捲軸 */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 </style>
