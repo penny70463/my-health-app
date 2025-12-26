@@ -16,11 +16,10 @@
       </button>
 
       <button 
-        disabled
-        class="flex items-center gap-1 bg-gray-200 px-3 py-2 rounded-xl text-sm font-medium text-gray-400 cursor-not-allowed opacity-80"
+        @click="showCollectionModal = true"
+        class="flex items-center gap-1 bg-white px-3 py-2 rounded-xl shadow-sm text-sm font-medium text-slate-600 hover:bg-gray-50 active:scale-95 transition"
       >
         📖 我的圖鑑
-        <span class="text-xs bg-gray-400 text-white px-1 rounded">開發中</span>
       </button>
     </div>
 
@@ -181,13 +180,17 @@
               <div class="flex items-center gap-3">
                 <button 
                   :disabled="tempSettings.waterGoal === 2000"
-                  @click="tempSettings.waterGoal = Math.max(500, tempSettings.waterGoal - 250)"
-                  class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold hover:bg-blue-200"
+                  @click="tempSettings.waterGoal = Math.max(2000, tempSettings.waterGoal - 250)"
+                  class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold hover:bg-blue-200
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
                 >-</button>
                 <span class="w-12 text-center font-bold text-slate-700">{{ tempSettings.waterGoal }}</span>
                 <button 
+                  :disabled="tempSettings.waterGoal >= 5000"
                   @click="tempSettings.waterGoal = Math.min(5000, tempSettings.waterGoal + 250)"
-                  class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold hover:bg-blue-200"
+                  class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold hover:bg-blue-200
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400
+                  "
                 >+</button>
               </div>
             </div>
@@ -197,8 +200,9 @@
               <div class="flex items-center gap-3">
                 <button 
                   :disabled="tempSettings.legGoal === 2"
-                  @click="tempSettings.legGoal = Math.max(1, tempSettings.legGoal - 1)"
-                  class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold hover:bg-orange-200"
+                  @click="tempSettings.legGoal = Math.max(2, tempSettings.legGoal - 1)"
+                  class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold hover:bg-orange-200
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
                 >-</button>
                 <span class="w-12 text-center font-bold text-slate-700">{{ tempSettings.legGoal }}</span>
                 <button 
@@ -278,6 +282,59 @@
         </button>
       </div>
     </div>
+
+    <div v-if="showCollectionModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-bounce-in flex flex-col max-h-[80vh]">
+        
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+          <h3 class="text-xl font-bold text-slate-800">📖 果樹圖鑑</h3>
+          <button @click="showCollectionModal = false" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+
+        <div class="mb-4 text-center">
+          <span class="text-sm text-slate-500">收集進度</span>
+          <div class="text-2xl font-bold text-orchardGreen">
+            {{ unlockedTrees.length }} / {{ Object.keys(TREE_DATA).length }}
+          </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-1">
+          <div class="grid grid-cols-2 gap-4">
+            <div 
+              v-for="(tree, id) in TREE_DATA" 
+              :key="id"
+              class="relative flex flex-col items-center p-3 rounded-xl border-2 transition-all"
+              :class="unlockedTrees.includes(id) ? 'border-green-100 bg-green-50' : 'border-gray-100 bg-gray-50'"
+            >
+              <div class="absolute top-2 right-2">
+                <span v-if="unlockedTrees.includes(id)" class="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded-full font-bold">已擁有</span>
+                <span v-else class="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">未解鎖</span>
+              </div>
+
+              <div class="h-24 w-24 flex items-center justify-center mb-2">
+                <img 
+                  :src="tree.stages[3]" 
+                  :class="[
+                    'h-full w-full object-contain transition-all duration-500',
+                    unlockedTrees.includes(id) ? 'filter-none drop-shadow-md' : 'filter grayscale brightness-50 opacity-40'
+                  ]"
+                />
+              </div>
+
+              <div class="text-center">
+                <h4 class="font-bold text-sm" :class="unlockedTrees.includes(id) ? 'text-slate-800' : 'text-slate-400'">
+                  {{ unlockedTrees.includes(id) ? tree.name : '???' }}
+                </h4>
+                <p class="text-[10px] mt-1 line-clamp-2" :class="unlockedTrees.includes(id) ? 'text-slate-500' : 'text-transparent bg-gray-200 rounded'">
+                  {{ tree.description }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </section>
 </template>
 
@@ -308,6 +365,7 @@ const showRakeEffect = ref(false)
 const showWaterEffect = ref(false) 
 const showHarvestModal = ref(false)
 const showSettingsModal = ref(false)
+const showCollectionModal = ref(false) // 控制圖鑑彈窗
 
 const waterCount = ref(0)
 const legCount = ref(0)
