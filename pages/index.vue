@@ -301,8 +301,10 @@ const dailyPoints = computed(() => {
 
 const isDailyCapped = computed(() => dailyPoints.value >= DAILY_MAX_POINTS)
 
-// 🌟 邏輯用的真實進度
-const totalProgress = computed(() => Math.min(savedGrowth.value + dailyPoints.value, 100))
+// 🌟 修改：確保總進度不為負數 (因為 savedGrowth 可能是負的)
+const totalProgress = computed(() => {
+  return Math.max(0, Math.min(savedGrowth.value + dailyPoints.value, 100))
+})
 
 // 🌟 核心：判斷每日任務是否全數完成 (雙重卡控)
 const isDailyTaskDone = computed(() => {
@@ -339,33 +341,22 @@ const currentTreeImage = computed(() => {
 })
 
 // Functions
-
 const toggleTime = (timeStr) => {
   const index = tempSettings.value.times.indexOf(timeStr)
-  if (index === -1) {
-    tempSettings.value.times.push(timeStr)
-  } else {
-    tempSettings.value.times.splice(index, 1)
-  }
+  if (index === -1) { tempSettings.value.times.push(timeStr) } 
+  else { tempSettings.value.times.splice(index, 1) }
 }
 
-const openSettings = () => {
-  showSettingsModal.value = true
-}
+const openSettings = () => { showSettingsModal.value = true }
 
 const saveSettings = async () => {
   if (!userId.value) return
   const timeString = tempSettings.value.times.sort().join(',')
-
   try {
-    const { error } = await supabase
-      .from('users')
-      .update({
+    const { error } = await supabase.from('users').update({
         is_reminder_enabled: tempSettings.value.enabled,
         reminder_time: timeString
-      })
-      .eq('user_id', userId.value)
-
+      }).eq('user_id', userId.value)
     if (error) throw error
     alert('設定已儲存！')
     showSettingsModal.value = false
@@ -388,12 +379,8 @@ const loadUserData = async (uid) => {
       unlockedTrees.value = data.unlocked_trees || []
       
       if (data.reminder_time) {
-        tempSettings.value.times = data.reminder_time.includes(',') 
-          ? data.reminder_time.split(',') 
-          : [data.reminder_time]
-      } else {
-        tempSettings.value.times = ['08:00']
-      }
+        tempSettings.value.times = data.reminder_time.includes(',') ? data.reminder_time.split(',') : [data.reminder_time]
+      } else { tempSettings.value.times = ['08:00'] }
       
       if (data.is_reminder_enabled !== undefined) tempSettings.value.enabled = data.is_reminder_enabled
 
@@ -427,28 +414,15 @@ const loadUserData = async (uid) => {
 
 const saveUserData = async (uid, water, legs, saved, treeId, unlocked, date) => {
   if (!uid) return
-  
   await supabase.from('users').upsert({
-    user_id: uid,
-    water_count: water, 
-    leg_count: legs,
-    daily_water: water,
-    daily_leg: legs,
-    last_active_date: date,
-    saved_growth: saved,
-    current_tree_id: treeId,
-    unlocked_trees: unlocked,
-    last_updated: date
+    user_id: uid, water_count: water, leg_count: legs, daily_water: water, daily_leg: legs, last_active_date: date, saved_growth: saved, current_tree_id: treeId, unlocked_trees: unlocked, last_updated: date
   }).select()
 }
 
 const handleWater = async () => {
   waterCount.value += WATER_PER_CLICK
   showWaterEffect.value = false
-  nextTick(() => { 
-    showWaterEffect.value = true; 
-    setTimeout(() => showWaterEffect.value = false, 1000) 
-  })
+  nextTick(() => { showWaterEffect.value = true; setTimeout(() => showWaterEffect.value = false, 1000) })
   checkGrowth()
   await syncToCloud()
 }
@@ -461,9 +435,7 @@ const handleLegs = async () => {
   await syncToCloud()
 }
 
-const checkGrowth = () => {
-  // 自動彈窗邏輯已移除，改由 UI 按鈕觸發
-}
+const checkGrowth = () => {}
 
 const handleHarvest = async () => {
   if (!unlockedTrees.value.includes(currentTreeId.value)) {
@@ -472,40 +444,29 @@ const handleHarvest = async () => {
   showHarvestModal.value = true
 }
 
+// 🌟 修改：收成後不歸零今日進度，而是抵銷 savedGrowth
 const closeHarvestModal = async () => {
   showHarvestModal.value = false
   const nextTreeId = getRandomTreeId(currentTreeId.value)
   currentTreeId.value = nextTreeId
-  waterCount.value = 0
-  legCount.value = 0
-  savedGrowth.value = 0
+  
+  // 讓總進度變為 0 (抵銷掉今日的 dailyPoints)
+  savedGrowth.value = -dailyPoints.value
+  
   await syncToCloud()
-  alert(`新種子種下囉！這次是：${TREE_DATA[nextTreeId].name}`)
+  alert(`新種子種下囉！這次是：${TREE_DATA[nextTreeId].name}，請期待明天它發芽吧！🌱`)
 }
 
 const syncToCloud = async () => {
   if (userId.value) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
-    await saveUserData(
-      userId.value, 
-      waterCount.value, 
-      legCount.value, 
-      savedGrowth.value, 
-      currentTreeId.value, 
-      unlockedTrees.value, 
-      today
-    )
+    await saveUserData(userId.value, waterCount.value, legCount.value, savedGrowth.value, currentTreeId.value, unlockedTrees.value, today)
   }
 }
 
 onMounted(async () => {
   if (import.meta.dev) {
-    setTimeout(() => { 
-      userId.value = 'mock'; 
-      waterCount.value = 0; 
-      legCount.value = 0; 
-      isLoading.value = false 
-    }, 500)
+    setTimeout(() => { userId.value = 'mock'; waterCount.value = 0; legCount.value = 0; isLoading.value = false }, 500)
     return
   }
   try {
