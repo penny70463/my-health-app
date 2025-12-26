@@ -47,8 +47,8 @@
           <div v-for="i in 6" :key="i"
                class="absolute text-blue-400 text-2xl opacity-0 animate-water-drop"
                :style="{
-                 left: `${20 + Math.random() * 60}%`, // 隨機分佈
-                 animationDelay: `${Math.random() * 0.5}s`, // 隨機延遲
+                 left: `${20 + Math.random() * 60}%`,
+                 animationDelay: `${Math.random() * 0.5}s`,
                  top: '-20px'
                }"
           >
@@ -64,8 +64,8 @@
           class="absolute top-0 right-0 text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm z-30 transition-colors duration-300"
           :class="[
             isTaskLack 
-              ? 'bg-orange-100 text-orange-600 border-orange-300 animate-pulse' // 缺任務時亮橘燈
-              : 'bg-yellow-100 text-yellow-700 border-yellow-300' // 平常亮黃燈
+              ? 'bg-orange-100 text-orange-600 border-orange-300 animate-pulse'
+              : 'bg-yellow-100 text-yellow-700 border-yellow-300'
           ]"
         >
           <span v-if="isTaskLack">🔥 還差一點點！</span>
@@ -84,21 +84,21 @@
         
         <div>
           <div class="flex justify-between items-center mb-1">
-            <span class="flex items-center gap-1">💧 今日喝水 <span class="text-xs text-gray-400">(目標 2000cc)</span></span>
+            <span class="flex items-center gap-1">💧 今日喝水 <span class="text-xs text-gray-400">(目標 {{ userWaterGoal }}cc)</span></span>
             <span class="font-bold text-blue-600">{{ waterCount }} cc</span>
           </div>
-          <div :class="['w-full bg-gray-200 rounded-full h-2.5 overflow-hidden', (isTaskLack && waterCount < WATER_GOAL) ? 'ring-2 ring-orange-300 ring-offset-1' : '']">
-            <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-500" :style="{ width: Math.min((waterCount / WATER_GOAL) * 100, 100) + '%' }"></div>
+          <div :class="['w-full bg-gray-200 rounded-full h-2.5 overflow-hidden', (isTaskLack && waterCount < userWaterGoal) ? 'ring-2 ring-orange-300 ring-offset-1' : '']">
+            <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-500" :style="{ width: Math.min((waterCount / userWaterGoal) * 100, 100) + '%' }"></div>
           </div>
         </div>
 
         <div>
           <div class="flex justify-between items-center mb-1">
-            <span class="flex items-center gap-1">🦵 今日抬腿 <span class="text-xs text-gray-400">(目標 2 組)</span></span>
+            <span class="flex items-center gap-1">🦵 今日抬腿 <span class="text-xs text-gray-400">(目標 {{ userLegGoal }}組)</span></span>
             <span class="font-bold text-slate-600">{{ legCount }} 組</span>
           </div>
-          <div :class="['w-full bg-gray-200 rounded-full h-2.5 overflow-hidden', (isTaskLack && legCount < LEG_GOAL) ? 'ring-2 ring-orange-300 ring-offset-1' : '']">
-            <div class="bg-orange-400 h-2.5 rounded-full transition-all duration-500" :style="{ width: Math.min((legCount / LEG_GOAL) * 100, 100) + '%' }"></div>
+          <div :class="['w-full bg-gray-200 rounded-full h-2.5 overflow-hidden', (isTaskLack && legCount < userLegGoal) ? 'ring-2 ring-orange-300 ring-offset-1' : '']">
+            <div class="bg-orange-400 h-2.5 rounded-full transition-all duration-500" :style="{ width: Math.min((legCount / userLegGoal) * 100, 100) + '%' }"></div>
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@
             color="#6BBF59" 
             @click="handleWater" 
             :disabled="isLoading" 
-            :class="(isTaskLack && waterCount < WATER_GOAL) ? 'animate-bounce border-2 border-orange-400' : ''"
+            :class="(isTaskLack && waterCount < userWaterGoal) ? 'animate-bounce border-2 border-orange-400' : ''"
           />
           <TaskButton 
             label="抬腿 20 下" 
@@ -120,7 +120,7 @@
             color="#FFB347" 
             @click="handleLegs" 
             :disabled="isLoading" 
-            :class="(isTaskLack && legCount < LEG_GOAL) ? 'animate-bounce border-2 border-orange-400' : ''"
+            :class="(isTaskLack && legCount < userLegGoal) ? 'animate-bounce border-2 border-orange-400' : ''"
           />
         </div>
 
@@ -141,8 +141,8 @@
           <span>成長值已滿！請完成以下任務來收成：</span>
         </div>
         <div class="flex gap-2 text-xs mt-1">
-          <span v-if="waterCount < WATER_GOAL" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-blue-200">💧 喝滿水</span>
-          <span v-if="legCount < LEG_GOAL" class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">🦵 做完抬腿</span>
+          <span v-if="waterCount < userWaterGoal" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-blue-200">💧 喝滿水</span>
+          <span v-if="legCount < userLegGoal" class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">🦵 做完抬腿</span>
         </div>
       </div>
 
@@ -154,7 +154,7 @@
     <div v-if="showSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-bounce-in space-y-6">
         <div class="flex justify-between items-center">
-          <h3 class="text-xl font-bold text-slate-800">⏰ 每日提醒設定</h3>
+          <h3 class="text-xl font-bold text-slate-800">⏰ 設定</h3>
           <button @click="showSettingsModal = false" class="text-gray-400 hover:text-gray-600">✕</button>
         </div>
         
@@ -173,6 +173,45 @@
             </button>
           </div>
 
+          <div class="space-y-4 border-t border-b border-gray-100 py-4">
+            <h4 class="text-sm font-bold text-slate-700">🎯 每日目標設定</h4>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-slate-600">💧 喝水量 (cc)</span>
+              <div class="flex items-center gap-3">
+                <button 
+                  :disabled="tempSettings.waterGoal === 2000"
+                  @click="tempSettings.waterGoal = Math.max(500, tempSettings.waterGoal - 250)"
+                  class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold hover:bg-blue-200"
+                >-</button>
+                <span class="w-12 text-center font-bold text-slate-700">{{ tempSettings.waterGoal }}</span>
+                <button 
+                  @click="tempSettings.waterGoal = Math.min(5000, tempSettings.waterGoal + 250)"
+                  class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold hover:bg-blue-200"
+                >+</button>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-slate-600">🦵 抬腿 (組)</span>
+              <div class="flex items-center gap-3">
+                <button 
+                  :disabled="tempSettings.legGoal === 2"
+                  @click="tempSettings.legGoal = Math.max(1, tempSettings.legGoal - 1)"
+                  class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold hover:bg-orange-200"
+                >-</button>
+                <span class="w-12 text-center font-bold text-slate-700">{{ tempSettings.legGoal }}</span>
+                <button 
+                  @click="tempSettings.legGoal = Math.min(20, tempSettings.legGoal + 1)"
+                  class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-bold hover:bg-orange-200"
+                >+</button>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 text-center">
+              * 調整目標後，達成率會即時重新計算
+            </p>
+          </div>
+
           <div class="space-y-2">
             <div class="flex justify-between items-end">
               <label class="block text-sm text-slate-500">選擇提醒時間 (可複選)</label>
@@ -180,6 +219,10 @@
                 已選 {{ tempSettings.times.length }} 個時段
               </span>
             </div>
+            
+            <p class="text-xs text-slate-400 mb-2">
+              ⚠️ 提醒時間以 <span class="font-bold text-orchardGreen">台北時間 (GMT+8)</span> 為準
+            </p>
             
             <div class="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
               <button
@@ -197,15 +240,8 @@
                 {{ (hour-1).toString().padStart(2, '0') }}
               </button>
             </div>
-            <p class="text-xs text-gray-400 text-center mt-1">
-              點選綠色按鈕可取消選擇
-            </p>
           </div>
           
-          <p class="text-xs text-gray-400">
-            * 系統將會在您指定的時間，檢查您是否尚未達成今日目標，並透過 LINE 傳送溫馨提醒。
-          </p>
-
           <div class="pt-2 border-t border-gray-100">
             <p class="text-xs text-center text-slate-500 mb-2">覺得好用嗎？邀請朋友一起來種樹！🌱</p>
             <a 
@@ -248,7 +284,6 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
 
-// 輔助函式：隨機取得下一個樹種
 const getRandomTreeId = (currentId) => {
   const keys = Object.keys(TREE_DATA)
   const available = keys.filter(k => k !== currentId)
@@ -256,19 +291,17 @@ const getRandomTreeId = (currentId) => {
   return available[Math.floor(Math.random() * available.length)]
 }
 
-// === 常數 ===
-const WATER_GOAL = 2000
+// === 常數 (目標改為變數，分數固定) ===
 const WATER_PER_CLICK = 250
-const LEG_GOAL = 2 
 const LEG_PER_CLICK = 1 
-const POINTS_PER_WATER_GOAL = 12.5 
-const POINTS_PER_LEG_GOAL = 12.5 
+// 🌟 不管目標設多少，完成後的總分固定 (確保公平)
+const POINTS_PER_WATER_TASK = 15 // 佔每日 30 分的一半
+const POINTS_PER_LEG_TASK = 15   // 佔每日 30 分的一半
 const DAILY_MAX_POINTS = 30 
 
 const supabase = useSupabaseClient()
 const { $liff } = useNuxtApp()
 
-// === 狀態 ===
 const userId = ref(null)
 const isLoading = ref(true)
 const showRakeEffect = ref(false)
@@ -276,63 +309,65 @@ const showWaterEffect = ref(false)
 const showHarvestModal = ref(false)
 const showSettingsModal = ref(false)
 
-// 資料庫狀態
 const waterCount = ref(0)
 const legCount = ref(0)
 const savedGrowth = ref(0) 
 const currentTreeId = ref('apple')
 const unlockedTrees = ref([])
 
-// 設定狀態 (使用陣列支援複選)
+// 🌟 新增：使用者自訂目標
+const userWaterGoal = ref(2000)
+const userLegGoal = ref(2)
+
+// 🌟 修改：設定暫存加入目標
 const tempSettings = ref({
   enabled: true,
-  times: []
+  times: [],
+  waterGoal: 2000,
+  legGoal: 2
 })
 
-// === Computed ===
 const currentTreeConfig = computed(() => TREE_DATA[currentTreeId.value] || TREE_DATA['apple'])
 
+// 🌟 修改：根據自訂目標計算分數
 const dailyPoints = computed(() => {
-  const waterScore = Math.min(waterCount.value / WATER_GOAL, 1) * POINTS_PER_WATER_GOAL
-  const scorePerLeg = POINTS_PER_LEG_GOAL / LEG_GOAL
-  const legScore = legCount.value * scorePerLeg
-  return Math.min(waterScore + legScore, DAILY_MAX_POINTS)
+  // 計算達成率 (0 ~ 1)
+  const waterProgress = Math.min(waterCount.value / userWaterGoal.value, 1)
+  const legProgress = Math.min(legCount.value / userLegGoal.value, 1)
+  
+  // 換算分數
+  const wScore = waterProgress * POINTS_PER_WATER_TASK
+  const lScore = legProgress * POINTS_PER_LEG_TASK
+  
+  return Math.min(wScore + lScore, DAILY_MAX_POINTS)
 })
 
 const isDailyCapped = computed(() => dailyPoints.value >= DAILY_MAX_POINTS)
 
-// 🌟 修改：確保總進度不為負數 (因為 savedGrowth 可能是負的)
 const totalProgress = computed(() => {
   return Math.max(0, Math.min(savedGrowth.value + dailyPoints.value, 100))
 })
 
-// 🌟 核心：判斷每日任務是否全數完成 (雙重卡控)
+// 🌟 修改：雙重卡控使用自訂目標
 const isDailyTaskDone = computed(() => {
-  return waterCount.value >= WATER_GOAL && legCount.value >= LEG_GOAL
+  return waterCount.value >= userWaterGoal.value && legCount.value >= userLegGoal.value
 })
 
-// 🌟 顯示邏輯：如果分數滿了，但任務沒做完，卡在 99.9%
 const displayProgress = computed(() => {
   const p = totalProgress.value
   if (p >= 100 && !isDailyTaskDone.value) return 99.9
   return p
 })
 
-// 🌟 階段邏輯：必須任務全做完，才能進入 Stage 4 (收成)
 const treeStage = computed(() => {
   const p = totalProgress.value
-  
   if (p >= 100) return isDailyTaskDone.value ? 4 : 3
   if (p >= 50) return 3 
-  
-  // 階段 2: 超過 20% (小樹)
   if (p >= 20) return 2 
-  
-  // 階段 1: 種子
   return 1 
 })
 
-// 🌟 缺任務判斷：滿分 + (缺水 OR 缺腿)
+// 🌟 修改：缺任務判斷使用自訂目標
 const isTaskLack = computed(() => totalProgress.value >= 100 && !isDailyTaskDone.value)
 
 const currentTreeImage = computed(() => {
@@ -353,10 +388,17 @@ const saveSettings = async () => {
   if (!userId.value) return
   const timeString = tempSettings.value.times.sort().join(',')
   try {
+    // 🌟 立即更新變數，讓介面即時反應
+    userWaterGoal.value = tempSettings.value.waterGoal
+    userLegGoal.value = tempSettings.value.legGoal
+
     const { error } = await supabase.from('users').update({
         is_reminder_enabled: tempSettings.value.enabled,
-        reminder_time: timeString
+        reminder_time: timeString,
+        goal_water: tempSettings.value.waterGoal, // 存入 DB
+        goal_leg: tempSettings.value.legGoal      // 存入 DB
       }).eq('user_id', userId.value)
+      
     if (error) throw error
     alert('設定已儲存！')
     showSettingsModal.value = false
@@ -378,6 +420,13 @@ const loadUserData = async (uid) => {
       currentTreeId.value = data.current_tree_id || 'apple'
       unlockedTrees.value = data.unlocked_trees || []
       
+      // 🌟 讀取自訂目標
+      userWaterGoal.value = data.goal_water || 2000
+      userLegGoal.value = data.goal_leg || 2
+      // 同步到暫存
+      tempSettings.value.waterGoal = userWaterGoal.value
+      tempSettings.value.legGoal = userLegGoal.value
+
       if (data.reminder_time) {
         tempSettings.value.times = data.reminder_time.includes(',') ? data.reminder_time.split(',') : [data.reminder_time]
       } else { tempSettings.value.times = ['08:00'] }
@@ -390,8 +439,13 @@ const loadUserData = async (uid) => {
         console.log('跨日結算中...')
         const lastDayWater = data.daily_water || data.water_count || 0
         const lastDayLeg = data.daily_leg || data.leg_count || 0
-        const wScore = Math.min(lastDayWater / WATER_GOAL, 1) * POINTS_PER_WATER_GOAL
-        const lScore = lastDayLeg * (POINTS_PER_LEG_GOAL / LEG_GOAL)
+        
+        // 🌟 跨日計算：簡單起見，直接用「喝 2000 / 做 2 組」當作昨天的滿分標準
+        // 或是您也可以考慮把昨天的 goal 也存下來，但這裡為了簡化，
+        // 我們假設跨日計算還是用「固定標準 (2000/2)」或「當前標準」。
+        // 這裡採用「當前標準」來計算昨天的得分。
+        const wScore = Math.min(lastDayWater / userWaterGoal.value, 1) * POINTS_PER_WATER_TASK
+        const lScore = Math.min(lastDayLeg / userLegGoal.value, 1) * POINTS_PER_LEG_TASK
         const lastDayPoints = Math.min(wScore + lScore, DAILY_MAX_POINTS)
         
         let newSavedGrowth = (data.saved_growth || 0) + lastDayPoints
@@ -444,17 +498,13 @@ const handleHarvest = async () => {
   showHarvestModal.value = true
 }
 
-// 🌟 修改：收成後不歸零今日進度，而是抵銷 savedGrowth
 const closeHarvestModal = async () => {
   showHarvestModal.value = false
   const nextTreeId = getRandomTreeId(currentTreeId.value)
   currentTreeId.value = nextTreeId
-  
-  // 讓總進度變為 0 (抵銷掉今日的 dailyPoints)
   savedGrowth.value = -dailyPoints.value
-  
   await syncToCloud()
-  alert(`新種子種下囉！這次是：${TREE_DATA[nextTreeId].name}，請期待明天它發芽吧！🌱`)
+  alert(`新種子種下囉！這次是：${TREE_DATA[nextTreeId].name}`)
 }
 
 const syncToCloud = async () => {
@@ -481,7 +531,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 掃把動畫 */
 @keyframes rakeFade {
   0% { opacity: 0; transform: translateY(10px) scale(0.8); }
   50% { opacity: 1; transform: translateY(0) scale(1.1); }
@@ -489,7 +538,6 @@ onMounted(async () => {
 }
 .animate-rake-fade { animation: rakeFade 800ms ease-out forwards; }
 
-/* 澆水水滴動畫 */
 @keyframes waterDrop {
   0% { transform: translateY(0) scale(0.5); opacity: 0; }
   20% { opacity: 1; }
@@ -498,7 +546,6 @@ onMounted(async () => {
 }
 .animate-water-drop { animation: waterDrop 1s ease-in forwards; }
 
-/* 彈窗動畫 */
 @keyframes bounceIn {
   0% { transform: scale(0.3); opacity: 0; }
   50% { transform: scale(1.05); opacity: 1; }
@@ -507,7 +554,6 @@ onMounted(async () => {
 }
 .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
 
-/* 自訂捲軸 */
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
