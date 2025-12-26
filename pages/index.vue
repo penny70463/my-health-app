@@ -4,7 +4,7 @@
     style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(2rem, env(safe-area-inset-bottom));"
   >
     <div v-if="isLoading" class="absolute inset-0 bg-blue-50/90 z-50 flex items-center justify-center">
-      <div class="text-orchardGreen animate-pulse font-bold text-lg">📡 果園連線中...</div>
+      <div class="text-orchardGreen animate-pulse font-bold text-lg">📡 農場連線中...</div>
     </div>
 
     <div class="w-full max-w-md flex justify-between items-center mb-4 px-2 relative z-10">
@@ -26,7 +26,7 @@
     <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 space-y-5 relative z-10">
       
       <div class="text-center space-y-1">
-        <h1 class="text-2xl font-bold text-orchardGreen">長青幸福果園</h1>
+        <h1 class="text-2xl font-bold text-orchardGreen">長青幸福農場</h1>
         <p class="text-sm text-slate-500">
           目前種植：
           <span :class="['font-bold', currentTreeConfig.color]">

@@ -12,7 +12,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   app: {
     head: {
-      title: '長青幸福果園',
+      title: '長青幸福農場',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
       viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
       bodyAttrs: {
