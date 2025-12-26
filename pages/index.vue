@@ -1,7 +1,7 @@
 <template>
   <section 
-    class="flex flex-col items-center justify-center min-h-dvh p-4 relative"
-    style="padding-top: max(2rem, env(safe-area-inset-top)); padding-bottom: max(2rem, env(safe-area-inset-bottom));"
+    class="flex flex-col items-center justify-start min-h-dvh p-4 relative"
+    style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(2rem, env(safe-area-inset-bottom));"
   >
     <div v-if="isLoading" class="absolute inset-0 bg-blue-50/90 z-50 flex items-center justify-center">
       <div class="text-orchardGreen animate-pulse font-bold text-lg">📡 果園連線中...</div>
