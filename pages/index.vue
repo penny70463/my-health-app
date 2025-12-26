@@ -63,12 +63,12 @@
         <div 
           class="absolute top-0 right-0 text-xs font-bold px-3 py-1.5 rounded-full border shadow-sm z-30 transition-colors duration-300"
           :class="[
-            isWaterLack 
-              ? 'bg-orange-100 text-orange-600 border-orange-300 animate-pulse' // 缺水時亮橘燈
+            isTaskLack 
+              ? 'bg-orange-100 text-orange-600 border-orange-300 animate-pulse' // 缺任務時亮橘燈
               : 'bg-yellow-100 text-yellow-700 border-yellow-300' // 平常亮黃燈
           ]"
         >
-          <span v-if="isWaterLack">🌱 差最後一步！</span>
+          <span v-if="isTaskLack">🔥 還差一點點！</span>
           <span v-else>總成長 {{ displayProgress.toFixed(1) }}%</span>
         </div>
       </div>
@@ -81,21 +81,23 @@
             <span v-if="isDailyCapped" class="text-xs">(已達上限)</span>
           </span>
         </div>
+        
         <div>
           <div class="flex justify-between items-center mb-1">
             <span class="flex items-center gap-1">💧 今日喝水 <span class="text-xs text-gray-400">(目標 2000cc)</span></span>
             <span class="font-bold text-blue-600">{{ waterCount }} cc</span>
           </div>
-          <div :class="['w-full bg-gray-200 rounded-full h-2.5 overflow-hidden', isWaterLack ? 'ring-2 ring-orange-300 ring-offset-1' : '']">
+          <div :class="['w-full bg-gray-200 rounded-full h-2.5 overflow-hidden', (isTaskLack && waterCount < WATER_GOAL) ? 'ring-2 ring-orange-300 ring-offset-1' : '']">
             <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-500" :style="{ width: Math.min((waterCount / WATER_GOAL) * 100, 100) + '%' }"></div>
           </div>
         </div>
+
         <div>
           <div class="flex justify-between items-center mb-1">
             <span class="flex items-center gap-1">🦵 今日抬腿 <span class="text-xs text-gray-400">(目標 2 組)</span></span>
             <span class="font-bold text-slate-600">{{ legCount }} 組</span>
           </div>
-          <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+          <div :class="['w-full bg-gray-200 rounded-full h-2.5 overflow-hidden', (isTaskLack && legCount < LEG_GOAL) ? 'ring-2 ring-orange-300 ring-offset-1' : '']">
             <div class="bg-orange-400 h-2.5 rounded-full transition-all duration-500" :style="{ width: Math.min((legCount / LEG_GOAL) * 100, 100) + '%' }"></div>
           </div>
         </div>
@@ -109,7 +111,7 @@
             color="#6BBF59" 
             @click="handleWater" 
             :disabled="isLoading" 
-            :class="isWaterLack ? 'animate-bounce border-2 border-orange-400' : ''"
+            :class="(isTaskLack && waterCount < WATER_GOAL) ? 'animate-bounce border-2 border-orange-400' : ''"
           />
           <TaskButton 
             label="抬腿 20 下" 
@@ -118,6 +120,7 @@
             color="#FFB347" 
             @click="handleLegs" 
             :disabled="isLoading" 
+            :class="(isTaskLack && legCount < LEG_GOAL) ? 'animate-bounce border-2 border-orange-400' : ''"
           />
         </div>
 
@@ -132,9 +135,15 @@
         </div>
       </div>
 
-      <div v-if="isWaterLack" class="bg-orange-100 text-orange-700 px-4 py-3 rounded-xl text-sm font-bold text-center animate-pulse border-2 border-orange-200 shadow-sm flex items-center justify-center gap-2">
-        <span>☝️</span>
-        <span>成長值已滿！請喝滿 2000cc 水來收成！</span>
+      <div v-if="isTaskLack" class="bg-orange-100 text-orange-700 px-4 py-3 rounded-xl text-sm font-bold text-center animate-pulse border-2 border-orange-200 shadow-sm flex flex-col items-center justify-center gap-1">
+        <div class="flex items-center gap-2">
+          <span>☝️</span>
+          <span>成長值已滿！請完成以下任務來收成：</span>
+        </div>
+        <div class="flex gap-2 text-xs mt-1">
+          <span v-if="waterCount < WATER_GOAL" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-blue-200">💧 喝滿水</span>
+          <span v-if="legCount < LEG_GOAL" class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">🦵 做完抬腿</span>
+        </div>
       </div>
 
       <p class="text-xs text-center text-slate-400 mt-2">
@@ -295,23 +304,23 @@ const isDailyCapped = computed(() => dailyPoints.value >= DAILY_MAX_POINTS)
 // 🌟 邏輯用的真實進度
 const totalProgress = computed(() => Math.min(savedGrowth.value + dailyPoints.value, 100))
 
-// 🌟 顯示用的進度 (UX優化：沒喝滿水只會顯示 99.9%)
+// 🌟 核心：判斷每日任務是否全數完成 (雙重卡控)
+const isDailyTaskDone = computed(() => {
+  return waterCount.value >= WATER_GOAL && legCount.value >= LEG_GOAL
+})
+
+// 🌟 顯示邏輯：如果分數滿了，但任務沒做完，卡在 99.9%
 const displayProgress = computed(() => {
   const p = totalProgress.value
-  const isWaterGoalReached = waterCount.value >= WATER_GOAL
-  // 如果分數到了 100 但水沒喝夠，強制卡在 99.9%
-  if (p >= 100 && !isWaterGoalReached) return 99.9
+  if (p >= 100 && !isDailyTaskDone.value) return 99.9
   return p
 })
 
+// 🌟 階段邏輯：必須任務全做完，才能進入 Stage 4 (收成)
 const treeStage = computed(() => {
   const p = totalProgress.value
-  const isWaterGoalReached = waterCount.value >= WATER_GOAL
   
-  // 階段 4: 滿分 + 喝水達標 (顯示收成按鈕)
-  if (p >= 100) return isWaterGoalReached ? 4 : 3
-  
-  // 階段 3: 超過 50% (中樹)
+  if (p >= 100) return isDailyTaskDone.value ? 4 : 3
   if (p >= 50) return 3 
   
   // 階段 2: 超過 20% (小樹)
@@ -321,8 +330,8 @@ const treeStage = computed(() => {
   return 1 
 })
 
-// 缺水判斷：滿分 + 沒喝夠水
-const isWaterLack = computed(() => totalProgress.value >= 100 && waterCount.value < WATER_GOAL)
+// 🌟 缺任務判斷：滿分 + (缺水 OR 缺腿)
+const isTaskLack = computed(() => totalProgress.value >= 100 && !isDailyTaskDone.value)
 
 const currentTreeImage = computed(() => {
   const index = Math.max(0, Math.min(treeStage.value - 1, 3))
