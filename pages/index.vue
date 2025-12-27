@@ -28,7 +28,7 @@
       <div class="text-center space-y-1">
         <h1 class="text-2xl font-bold text-orchardGreen">長青幸福農場</h1>
         <p class="text-sm text-slate-500">
-          目前種植：
+          目前培育：
           <span :class="['font-bold', currentTreeConfig.color]">
             {{ currentTreeConfig.name }}
           </span>
@@ -43,16 +43,31 @@
         />
         
         <div v-if="showWaterEffect" class="pointer-events-none absolute inset-0 z-20">
-          <div v-for="i in 6" :key="i"
-               class="absolute text-blue-400 text-2xl opacity-0 animate-water-drop"
-               :style="{
-                 left: `${20 + Math.random() * 60}%`,
-                 animationDelay: `${Math.random() * 0.5}s`,
-                 top: '-20px'
-               }"
-          >
-            💧
-          </div>
+          <template v-if="currentTreeConfig.type === 'animal'">
+            <div v-for="i in 6" :key="`heart-${i}`"
+                 class="absolute text-red-400 text-3xl opacity-0 animate-float-up"
+                 :style="{
+                   left: `${30 + Math.random() * 40}%`, /* 集中在中間 */
+                   animationDelay: `${Math.random() * 0.5}s`,
+                   top: '50%' /* 從中間開始飄 */
+                 }"
+            >
+              ❤️
+            </div>
+          </template>
+
+          <template v-else>
+            <div v-for="i in 6" :key="`drop-${i}`"
+                 class="absolute text-blue-400 text-2xl opacity-0 animate-water-drop"
+                 :style="{
+                   left: `${20 + Math.random() * 60}%`,
+                   animationDelay: `${Math.random() * 0.5}s`,
+                   top: '-20px'
+                 }"
+            >
+              💧
+            </div>
+          </template>
         </div>
 
         <div v-if="showRakeEffect" class="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
@@ -105,7 +120,7 @@
       <div class="h-24">
         <div v-if="treeStage < 4" class="grid grid-cols-2 gap-4 h-full">
           <TaskButton 
-            label="喝水 250cc" 
+            label="補水 250cc" 
             icon="💧" 
             color="#6BBF59" 
             @click="handleWater" 
@@ -113,7 +128,7 @@
             :class="(isTaskLack && waterCount < userWaterGoal) ? 'animate-bounce border-2 border-orange-400' : ''"
           />
           <TaskButton 
-            label="抬腿 20 下" 
+            label="抬腿 50 下" 
             subLabel="(完成 1 組)" 
             icon="🦵" 
             color="#FFB347" 
@@ -287,21 +302,21 @@
       <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-bounce-in flex flex-col max-h-[80vh]">
         
         <div class="flex justify-between items-center mb-4 border-b pb-2">
-          <h3 class="text-xl font-bold text-slate-800">📖 果樹圖鑑</h3>
+          <h3 class="text-xl font-bold text-slate-800">📖 作物圖鑑</h3>
           <button @click="showCollectionModal = false" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
         </div>
 
         <div class="mb-4 text-center">
           <span class="text-sm text-slate-500">收集進度</span>
           <div class="text-2xl font-bold text-orchardGreen">
-            {{ unlockedTrees.length }} / {{ Object.keys(TREE_DATA).length }}
+            {{ unlockedTrees.length }} / {{ Object.keys(ITEM_DATA).length }}
           </div>
         </div>
         
         <div class="flex-1 overflow-y-auto custom-scrollbar p-1">
           <div class="grid grid-cols-2 gap-4">
             <div 
-              v-for="(tree, id) in TREE_DATA" 
+              v-for="(item, id) in ITEM_DATA" 
               :key="id"
               class="relative flex flex-col items-center p-3 rounded-xl border-2 transition-all"
               :class="unlockedTrees.includes(id) ? 'border-green-100 bg-green-50' : 'border-gray-100 bg-gray-50'"
@@ -311,11 +326,14 @@
                 <span v-else class="text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">未解鎖</span>
               </div>
 
-              <div class="h-24 w-24 flex items-center justify-center mb-2">
+              <div class="aspect-square w-full max-w-[120px] flex items-center justify-center mb-2 bg-gray-50/50 rounded-lg">
                 <img 
-                  :src="tree.stages[3]" 
+                  :src="item.stages[3]" 
                   :class="[
-                    'h-full w-full object-contain transition-all duration-500',
+                    'h-full w-full',  /* 填滿容器 */
+                    'object-contain', /* 🌟 關鍵：保持比例，完整顯示 */
+                    'p-2',            /* 留一點內距，不要貼邊 */
+                    'transition-all duration-500',
                     unlockedTrees.includes(id) ? 'filter-none drop-shadow-md' : 'filter grayscale brightness-50 opacity-40'
                   ]"
                 />
@@ -323,10 +341,10 @@
 
               <div class="text-center">
                 <h4 class="font-bold text-sm" :class="unlockedTrees.includes(id) ? 'text-slate-800' : 'text-slate-400'">
-                  {{ unlockedTrees.includes(id) ? tree.name : '???' }}
+                  {{ unlockedTrees.includes(id) ? item.name : '???' }}
                 </h4>
                 <p class="text-[10px] mt-1 line-clamp-2" :class="unlockedTrees.includes(id) ? 'text-slate-500' : 'text-transparent bg-gray-200 rounded'">
-                  {{ tree.description }}
+                  {{ item.description }}
                 </p>
               </div>
             </div>
@@ -341,13 +359,6 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
 
-const getRandomTreeId = (currentId) => {
-  const keys = Object.keys(TREE_DATA)
-  const available = keys.filter(k => k !== currentId)
-  if (available.length === 0) return currentId 
-  return available[Math.floor(Math.random() * available.length)]
-}
-
 // === 常數 (目標改為變數，分數固定) ===
 const WATER_PER_CLICK = 250
 const LEG_PER_CLICK = 1 
@@ -360,6 +371,7 @@ const supabase = useSupabaseClient()
 const { $liff } = useNuxtApp()
 
 const userId = ref(null)
+const displayName = ref(null)
 const isLoading = ref(true)
 const showRakeEffect = ref(false)
 const showWaterEffect = ref(false) 
@@ -385,7 +397,7 @@ const tempSettings = ref({
   legGoal: 2
 })
 
-const currentTreeConfig = computed(() => TREE_DATA[currentTreeId.value] || TREE_DATA['apple'])
+const currentTreeConfig = computed(() => ITEM_DATA[currentTreeId.value] || ITEM_DATA['apple'])
 
 // 🌟 修改：根據自訂目標計算分數
 const dailyPoints = computed(() => {
@@ -526,9 +538,20 @@ const loadUserData = async (uid) => {
 
 const saveUserData = async (uid, water, legs, saved, treeId, unlocked, date) => {
   if (!uid) return
-  await supabase.from('users').upsert({
-    user_id: uid, water_count: water, leg_count: legs, daily_water: water, daily_leg: legs, last_active_date: date, saved_growth: saved, current_tree_id: treeId, unlocked_trees: unlocked, last_updated: date
-  }).select()
+  const payload = {
+    user_id: uid, 
+    water_count: water, 
+    leg_count: legs, 
+    daily_water: water, 
+    daily_leg: legs, 
+    last_active_date: date, 
+    saved_growth: saved, 
+    current_tree_id: treeId, 
+    unlocked_trees: unlocked, 
+    last_updated: date,
+    display_name: displayName.value
+  }
+  await supabase.from('users').upsert(payload).select()
 }
 
 const handleWater = async () => {
@@ -558,11 +581,24 @@ const handleHarvest = async () => {
 
 const closeHarvestModal = async () => {
   showHarvestModal.value = false
-  const nextTreeId = getRandomTreeId(currentTreeId.value)
-  currentTreeId.value = nextTreeId
-  savedGrowth.value = -dailyPoints.value
+  
+  // 🌟 修改這裡：把 unlockedTrees.value 傳進去
+  const nextId = getRandomItemId(currentTreeId.value, unlockedTrees.value)
+  
+  currentTreeId.value = nextId
+  
+  // 扣除法歸零進度
+  savedGrowth.value = -dailyPoints.value 
+  
   await syncToCloud()
-  alert(`新種子種下囉！這次是：${TREE_DATA[nextTreeId].name}`)
+  
+  // 這裡可以加個判斷，如果是新物種顯示不同的訊息
+  const isNew = !unlockedTrees.value.includes(nextId)
+  const msg = isNew 
+    ? `太幸運了！發現了新物種：${ITEM_DATA[nextId].name} 🌱` 
+    : `新生命種下囉！這次是：${ITEM_DATA[nextId].name} 🌱`
+    
+  alert(msg)
 }
 
 const syncToCloud = async () => {
@@ -582,6 +618,7 @@ onMounted(async () => {
     if ($liff.isLoggedIn()) {
       const profile = await $liff.getProfile()
       userId.value = profile.userId
+      displayName.value = profile.displayName
       await loadUserData(userId.value)
     } else { $liff.login() }
   } catch (e) { isLoading.value = false }
@@ -611,6 +648,14 @@ onMounted(async () => {
   100% { transform: scale(1); }
 }
 .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+
+/* 愛心飄升動畫 */
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  20% { opacity: 1; transform: scale(1.2); } /* 變大 */
+  100% { transform: translateY(-80px) scale(1); opacity: 0; } /* 往上飄並消失 */
+}
+.animate-float-up { animation: floatUp 1.2s ease-out forwards; }
 
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }

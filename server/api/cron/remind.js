@@ -116,7 +116,7 @@ export default defineEventHandler(async (event) => {
           to: user.user_id,
           messages: [{
             type: 'text',
-            text: `${greeting} 農場小管家提醒\n\n${subText}\n\n💧 今日喝水：${currentWater}/2000 cc\n🦵 今日抬腿：${currentLeg}/2 組\n\n快回來照顧您的果樹吧！💪\n\n${liffUrl}`
+            text: `${greeting} 農場小管家提醒\n\n${subText}\n\n💧 今日喝水：${currentWater}/2000 cc\n🦵 今日抬腿：${currentLeg}/2 組\n\n快回來照顧您的作物吧！💪\n\n${liffUrl}`
           }]
         })
       })

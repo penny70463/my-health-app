@@ -1,4 +1,5 @@
 import liff from '@line/liff'
+import { defineNuxtPlugin } from 'nuxt/app'
 
 export default defineNuxtPlugin(async () => {
   // 建議：直接填入 LIFF ID 字串最穩定，避免環境變數讀取不到的問題
