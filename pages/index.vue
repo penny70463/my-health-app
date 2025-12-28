@@ -194,8 +194,8 @@
               <span class="text-sm text-slate-600">💧 喝水量 (cc)</span>
               <div class="flex items-center gap-3">
                 <button 
-                  :disabled="tempSettings.waterGoal === 2000"
-                  @click="tempSettings.waterGoal = Math.max(2000, tempSettings.waterGoal - 250)"
+                  :disabled="tempSettings.waterGoal === 1500"
+                  @click="tempSettings.waterGoal = Math.max(1500, tempSettings.waterGoal - 250)"
                   class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold hover:bg-blue-200
                   disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
                 >-</button>
@@ -357,273 +357,298 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
-
-// === 常數 (目標改為變數，分數固定) ===
-const WATER_PER_CLICK = 250
-const LEG_PER_CLICK = 1 
-// 🌟 不管目標設多少，完成後的總分固定 (確保公平)
-const POINTS_PER_WATER_TASK = 15 // 佔每日 30 分的一半
-const POINTS_PER_LEG_TASK = 15   // 佔每日 30 分的一半
-const DAILY_MAX_POINTS = 30 
-
-const supabase = useSupabaseClient()
-const { $liff } = useNuxtApp()
-
-const userId = ref(null)
-const displayName = ref(null)
-const isLoading = ref(true)
-const showRakeEffect = ref(false)
-const showWaterEffect = ref(false) 
-const showHarvestModal = ref(false)
-const showSettingsModal = ref(false)
-const showCollectionModal = ref(false) // 控制圖鑑彈窗
-
-const waterCount = ref(0)
-const legCount = ref(0)
-const savedGrowth = ref(0) 
-const currentTreeId = ref('apple')
-const unlockedTrees = ref([])
-
-// 🌟 新增：使用者自訂目標
-const userWaterGoal = ref(2000)
-const userLegGoal = ref(2)
-
-// 🌟 修改：設定暫存加入目標
-const tempSettings = ref({
-  enabled: true,
-  times: [],
-  waterGoal: 2000,
-  legGoal: 2
-})
-
-const currentTreeConfig = computed(() => ITEM_DATA[currentTreeId.value] || ITEM_DATA['apple'])
-
-// 🌟 修改：根據自訂目標計算分數
-const dailyPoints = computed(() => {
-  // 計算達成率 (0 ~ 1)
-  const waterProgress = Math.min(waterCount.value / userWaterGoal.value, 1)
-  const legProgress = Math.min(legCount.value / userLegGoal.value, 1)
+  import { computed, nextTick, onMounted, ref } from 'vue';
+import { ITEM_DATA, getRandomItemId } from '~/utils/treeConfigs'; // 確保引入
   
-  // 換算分數
-  const wScore = waterProgress * POINTS_PER_WATER_TASK
-  const lScore = legProgress * POINTS_PER_LEG_TASK
+  // === 常數 ===
+  const WATER_PER_CLICK = 250
+  const LEG_PER_CLICK = 1 
+  const POINTS_PER_WATER_TASK = 15 
+  const POINTS_PER_LEG_TASK = 15   
+  const DAILY_MAX_POINTS = 30 
   
-  return Math.min(wScore + lScore, DAILY_MAX_POINTS)
-})
-
-const isDailyCapped = computed(() => dailyPoints.value >= DAILY_MAX_POINTS)
-
-const totalProgress = computed(() => {
-  return Math.max(0, Math.min(savedGrowth.value + dailyPoints.value, 100))
-})
-
-// 🌟 修改：雙重卡控使用自訂目標
-const isDailyTaskDone = computed(() => {
-  return waterCount.value >= userWaterGoal.value && legCount.value >= userLegGoal.value
-})
-
-const displayProgress = computed(() => {
-  const p = totalProgress.value
-  if (p >= 100 && !isDailyTaskDone.value) return 99.9
-  return p
-})
-
-const treeStage = computed(() => {
-  const p = totalProgress.value
-  if (p >= 100) return isDailyTaskDone.value ? 4 : 3
-  if (p >= 50) return 3 
-  if (p >= 20) return 2 
-  return 1 
-})
-
-// 🌟 修改：缺任務判斷使用自訂目標
-const isTaskLack = computed(() => totalProgress.value >= 100 && !isDailyTaskDone.value)
-
-const currentTreeImage = computed(() => {
-  const index = Math.max(0, Math.min(treeStage.value - 1, 3))
-  return currentTreeConfig.value.stages[index]
-})
-
-// Functions
-const toggleTime = (timeStr) => {
-  const index = tempSettings.value.times.indexOf(timeStr)
-  if (index === -1) { tempSettings.value.times.push(timeStr) } 
-  else { tempSettings.value.times.splice(index, 1) }
-}
-
-const openSettings = () => { showSettingsModal.value = true }
-
-const saveSettings = async () => {
-  if (!userId.value) return
-  const timeString = tempSettings.value.times.sort().join(',')
-  try {
-    // 🌟 立即更新變數，讓介面即時反應
-    userWaterGoal.value = tempSettings.value.waterGoal
-    userLegGoal.value = tempSettings.value.legGoal
-
-    const { error } = await supabase.from('users').update({
-        is_reminder_enabled: tempSettings.value.enabled,
-        reminder_time: timeString,
-        goal_water: tempSettings.value.waterGoal, // 存入 DB
-        goal_leg: tempSettings.value.legGoal      // 存入 DB
-      }).eq('user_id', userId.value)
-      
-    if (error) throw error
-    alert('設定已儲存！')
-    showSettingsModal.value = false
-  } catch (e) {
-    alert('儲存失敗，請稍後再試')
-    console.error(e)
+  const { $liff } = useNuxtApp()
+  // ❌ 移除 const supabase = useSupabaseClient()
+  
+  const userId = ref(null)
+  const displayName = ref(null) // 🌟 儲存暱稱的狀態
+  const isLoading = ref(true)
+  
+  // ... (其他 UI 狀態變數保持不變) ...
+  const showRakeEffect = ref(false)
+  const showWaterEffect = ref(false) 
+  const showHarvestModal = ref(false)
+  const showSettingsModal = ref(false)
+  const showCollectionModal = ref(false)
+  const waterCount = ref(0)
+  const legCount = ref(0)
+  const savedGrowth = ref(0) 
+  const currentTreeId = ref('apple')
+  const unlockedTrees = ref([])
+  const userWaterGoal = ref(1500)
+  const userLegGoal = ref(2)
+  const tempSettings = ref({ enabled: true, times: ['08:00'], waterGoal: 1500, legGoal: 2 })
+  
+  // ... (Computed 屬性保持不變) ...
+  const currentTreeConfig = computed(() => ITEM_DATA[currentTreeId.value] || ITEM_DATA['apple'])
+  const dailyPoints = computed(() => { /* ... */ return Math.min((Math.min(waterCount.value / userWaterGoal.value, 1) * POINTS_PER_WATER_TASK) + (Math.min(legCount.value / userLegGoal.value, 1) * POINTS_PER_LEG_TASK), DAILY_MAX_POINTS) })
+  const isDailyCapped = computed(() => dailyPoints.value >= DAILY_MAX_POINTS)
+  const totalProgress = computed(() => Math.max(0, Math.min(savedGrowth.value + dailyPoints.value, 100)))
+  const isDailyTaskDone = computed(() => waterCount.value >= userWaterGoal.value && legCount.value >= userLegGoal.value)
+  const displayProgress = computed(() => { const p = totalProgress.value; if (p >= 100 && !isDailyTaskDone.value) return 99.9; return p })
+  const treeStage = computed(() => { const p = totalProgress.value; if (p >= 100) return isDailyTaskDone.value ? 4 : 3; if (p >= 50) return 3; if (p >= 20) return 2; return 1 })
+  const isTaskLack = computed(() => totalProgress.value >= 100 && !isDailyTaskDone.value)
+  const currentTreeImage = computed(() => currentTreeConfig.value.stages[Math.max(0, Math.min(treeStage.value - 1, 3))])
+  
+  // === Functions ===
+  
+  const toggleTime = (timeStr) => {
+    const index = tempSettings.value.times.indexOf(timeStr)
+    if (index === -1) { tempSettings.value.times.push(timeStr) } 
+    else { tempSettings.value.times.splice(index, 1) }
   }
-}
-
-const loadUserData = async (uid) => {
-  try {
-    isLoading.value = true
-    const { data, error } = await supabase.from('users').select('*').eq('user_id', uid).single()
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
-
-    if (error || !data) {
-      await saveUserData(uid, 0, 0, 0, 'apple', [], today)
-    } else {
-      currentTreeId.value = data.current_tree_id || 'apple'
-      unlockedTrees.value = data.unlocked_trees || []
+  
+  const openSettings = () => { showSettingsModal.value = true }
+  
+  const saveSettings = async () => {
+    if (!userId.value) return
+    const timeString = tempSettings.value.times.sort().join(',')
+    try {
+      userWaterGoal.value = tempSettings.value.waterGoal
+      userLegGoal.value = tempSettings.value.legGoal
       
-      // 🌟 讀取自訂目標
-      userWaterGoal.value = data.goal_water || 2000
-      userLegGoal.value = data.goal_leg || 2
-      // 同步到暫存
-      tempSettings.value.waterGoal = userWaterGoal.value
-      tempSettings.value.legGoal = userLegGoal.value
-
-      if (data.reminder_time) {
-        tempSettings.value.times = data.reminder_time.includes(',') ? data.reminder_time.split(',') : [data.reminder_time]
-      } else { tempSettings.value.times = ['08:00'] }
+      await saveUserData({
+      userId: userId.value,
       
-      if (data.is_reminder_enabled !== undefined) tempSettings.value.enabled = data.is_reminder_enabled
+      // 傳入當前進度 (防止被覆蓋為 0)
+      water: waterCount.value,
+      legs: legCount.value,
+      saved: savedGrowth.value,
+      treeId: currentTreeId.value,
+      unlocked: unlockedTrees.value,
+      date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' }),
+      displayName: displayName.value,
 
-      const lastDate = data.last_active_date || data.last_updated
-      
-      if (lastDate !== today) {
-        console.log('跨日結算中...')
-        const lastDayWater = data.daily_water || data.water_count || 0
-        const lastDayLeg = data.daily_leg || data.leg_count || 0
+      // 🔥 傳入要更新的設定值 (對應 saveUserData 的解構名稱)
+      enabled: tempSettings.value.enabled,
+      time: timeString,
+      waterGoal: tempSettings.value.waterGoal,
+      legGoal: tempSettings.value.legGoal
+    })
         
-        // 🌟 跨日計算：簡單起見，直接用「喝 2000 / 做 2 組」當作昨天的滿分標準
-        // 或是您也可以考慮把昨天的 goal 也存下來，但這裡為了簡化，
-        // 我們假設跨日計算還是用「固定標準 (2000/2)」或「當前標準」。
-        // 這裡採用「當前標準」來計算昨天的得分。
-        const wScore = Math.min(lastDayWater / userWaterGoal.value, 1) * POINTS_PER_WATER_TASK
-        const lScore = Math.min(lastDayLeg / userLegGoal.value, 1) * POINTS_PER_LEG_TASK
-        const lastDayPoints = Math.min(wScore + lScore, DAILY_MAX_POINTS)
-        
-        let newSavedGrowth = (data.saved_growth || 0) + lastDayPoints
-        if (newSavedGrowth > 100) newSavedGrowth = 100
-        
-        waterCount.value = 0
-        legCount.value = 0
-        savedGrowth.value = newSavedGrowth
-        await saveUserData(userId.value, 0, 0, newSavedGrowth, currentTreeId.value, unlockedTrees.value, today)
-        
-      } else {
-        waterCount.value = data.daily_water !== null ? data.daily_water : data.water_count
-        legCount.value = data.daily_leg !== null ? data.daily_leg : data.leg_count
-        savedGrowth.value = data.saved_growth || 0
-      }
+      alert('設定已儲存！')
+      showSettingsModal.value = false
+    } catch (e) {
+      alert('儲存失敗，請稍後再試')
+      console.error(e)
     }
-  } catch (e) { console.error(e) } 
-  finally { isLoading.value = false }
-}
+  }
+  
+  // 🌟 修改：loadUserData 改用 API (GET)
+  const loadUserData = async (uid) => {
+    try {
+      isLoading.value = true
+      
+      // 呼叫後端讀取資料
+      const { data: response } = await useFetch('/api/user', {
+        method: 'GET',
+        params: { userId: uid }
+      })
+      
+      const data = response.value?.data
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+  
+      if (!data) {
+        // 🌟 情境 A：新用戶 (這裡才需要寫入預設設定！)
+        await saveUserData({
+          userId: uid,
+          water: 0,
+          legs: 0,
+          saved: 0,
+          treeId: 'apple',
+          unlocked: [],
+          date: today,
+          displayName: displayName.value,
+          // 🔥 在這裡注入預設值
+          enabled: true,
+          time: '09:00',
+          waterGoal: 1500,
+          legGoal: 2
+        })
+      } else {
+        // 舊用戶：讀取資料
+        currentTreeId.value = data.current_tree_id || 'apple'
+        unlockedTrees.value = data.unlocked_trees || []
+        userWaterGoal.value = data.goal_water || 1500
+        userLegGoal.value = data.goal_leg || 2
+        tempSettings.value.waterGoal = userWaterGoal.value
+        tempSettings.value.legGoal = userLegGoal.value
+  
+        if (data.reminder_time) {
+          tempSettings.value.times = data.reminder_time.includes(',') ? data.reminder_time.split(',') : [data.reminder_time]
+        }
+        
+        if (data.is_reminder_enabled !== undefined) tempSettings.value.enabled = data.is_reminder_enabled
+  
+        const lastDate = data.last_active_date || data.last_updated
+        
+        if (lastDate !== today) {
+          console.log('跨日結算中...')
+          const lastDayWater = data.daily_water || data.water_count || 0
+          const lastDayLeg = data.daily_leg || data.leg_count || 0
+          
+          const wScore = Math.min(lastDayWater / userWaterGoal.value, 1) * POINTS_PER_WATER_TASK
+          const lScore = Math.min(lastDayLeg / userLegGoal.value, 1) * POINTS_PER_LEG_TASK
+          const lastDayPoints = Math.min(wScore + lScore, DAILY_MAX_POINTS)
+          
+          let newSavedGrowth = (data.saved_growth || 0) + lastDayPoints
+          if (newSavedGrowth > 100) newSavedGrowth = 100
+          
+          waterCount.value = 0
+          legCount.value = 0
+          savedGrowth.value = newSavedGrowth
+          await saveUserData(userId.value, 0, 0, newSavedGrowth, currentTreeId.value, unlockedTrees.value, today)
+        } else {
+          waterCount.value = data.daily_water !== null ? data.daily_water : data.water_count
+          legCount.value = data.daily_leg !== null ? data.daily_leg : data.leg_count
+          savedGrowth.value = data.saved_growth || 0
+        }
+      }
+    } catch (e) { console.error(e) } 
+    finally { isLoading.value = false }
+  }
 
-const saveUserData = async (uid, water, legs, saved, treeId, unlocked, date) => {
+const saveUserData = async (params) => {
+  const { 
+    userId: uid, 
+    water, 
+    legs, 
+    saved, 
+    treeId, 
+    unlocked, 
+    date, 
+    displayName: name, 
+    enabled, 
+    time, 
+    waterGoal, 
+    legGoal 
+  } = params
+
   if (!uid) return
-  const payload = {
-    user_id: uid, 
-    water_count: water, 
-    leg_count: legs, 
-    daily_water: water, 
-    daily_leg: legs, 
-    last_active_date: date, 
-    saved_growth: saved, 
-    current_tree_id: treeId, 
-    unlocked_trees: unlocked, 
-    last_updated: date,
-    display_name: displayName.value
+  
+  await useFetch('/api/sync', {
+    method: 'POST',
+    body: {
+      userId: uid, 
+      waterCount: water, 
+      legCount: legs, 
+      savedGrowth: saved, 
+      currentTreeId: treeId, 
+      unlockedTrees: unlocked,
+      last_active_date: date,
+      displayName: name,
+      // 設定值
+      isReminderEnabled: enabled,
+      reminderTime: time,
+      goalWater: waterGoal,
+      goalLeg: legGoal
+    }
+  })
+}
+  
+  
+  const handleWater = async () => {
+    waterCount.value += WATER_PER_CLICK
+    showWaterEffect.value = false
+    nextTick(() => { showWaterEffect.value = true; setTimeout(() => showWaterEffect.value = false, 1000) })
+    checkGrowth()
+    await syncToCloud()
   }
-  await supabase.from('users').upsert(payload).select()
-}
-
-const handleWater = async () => {
-  waterCount.value += WATER_PER_CLICK
-  showWaterEffect.value = false
-  nextTick(() => { showWaterEffect.value = true; setTimeout(() => showWaterEffect.value = false, 1000) })
-  checkGrowth()
-  await syncToCloud()
-}
-
-const handleLegs = async () => {
-  legCount.value += LEG_PER_CLICK
-  showRakeEffect.value = false
-  nextTick(() => { showRakeEffect.value = true; setTimeout(() => showRakeEffect.value = false, 600) })
-  checkGrowth()
-  await syncToCloud()
-}
-
-const checkGrowth = () => {}
-
-const handleHarvest = async () => {
-  if (!unlockedTrees.value.includes(currentTreeId.value)) {
-    unlockedTrees.value.push(currentTreeId.value)
+  
+  const handleLegs = async () => {
+    legCount.value += LEG_PER_CLICK
+    showRakeEffect.value = false
+    nextTick(() => { showRakeEffect.value = true; setTimeout(() => showRakeEffect.value = false, 600) })
+    checkGrowth()
+    await syncToCloud()
   }
-  showHarvestModal.value = true
-}
-
-const closeHarvestModal = async () => {
-  showHarvestModal.value = false
   
-  // 🌟 修改這裡：把 unlockedTrees.value 傳進去
-  const nextId = getRandomItemId(currentTreeId.value, unlockedTrees.value)
+  const checkGrowth = () => {}
   
-  currentTreeId.value = nextId
-  
-  // 扣除法歸零進度
-  savedGrowth.value = -dailyPoints.value 
-  
-  await syncToCloud()
-  
-  // 這裡可以加個判斷，如果是新物種顯示不同的訊息
-  const isNew = !unlockedTrees.value.includes(nextId)
-  const msg = isNew 
-    ? `太幸運了！發現了新物種：${ITEM_DATA[nextId].name} 🌱` 
-    : `新生命種下囉！這次是：${ITEM_DATA[nextId].name} 🌱`
-    
-  alert(msg)
-}
-
-const syncToCloud = async () => {
-  if (userId.value) {
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
-    await saveUserData(userId.value, waterCount.value, legCount.value, savedGrowth.value, currentTreeId.value, unlockedTrees.value, today)
+  const handleHarvest = async () => {
+    if (!unlockedTrees.value.includes(currentTreeId.value)) {
+      unlockedTrees.value.push(currentTreeId.value)
+    }
+    showHarvestModal.value = true
   }
-}
-
-onMounted(async () => {
+  
+  const closeHarvestModal = async () => {
+    showHarvestModal.value = false
+    const nextId = getRandomItemId(currentTreeId.value, unlockedTrees.value)
+    currentTreeId.value = nextId
+    savedGrowth.value = -dailyPoints.value 
+    await syncToCloud()
+    const isNew = !unlockedTrees.value.includes(nextId)
+    const msg = isNew ? `太幸運了！發現了新物種：${ITEM_DATA[nextId].name} 🌱` : `新生命種下囉！這次是：${ITEM_DATA[nextId].name} 🌱`
+    alert(msg)
+  }
+  
+  const syncToCloud = async () => {
+    if (userId.value) {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+      
+      await saveUserData({
+        userId: userId.value,
+        water: waterCount.value,
+        legs: legCount.value,
+        saved: savedGrowth.value,
+        treeId: currentTreeId.value,
+        unlocked: unlockedTrees.value,
+        date: today
+      })  
+    }
+  }
+  
+  onMounted(async () => {
+    // 🚧 1. 本地開發模式 
   if (import.meta.dev) {
-    setTimeout(() => { userId.value = 'mock'; waterCount.value = 0; legCount.value = 0; isLoading.value = false }, 500)
-    return
-  }
-  try {
-    await $liff.ready
-    if ($liff.isLoggedIn()) {
-      const profile = await $liff.getProfile()
-      userId.value = profile.userId
-      displayName.value = profile.displayName
+    console.log('🔧 本地模式：模擬 LIFF 登入，準備呼叫後端 API...')
+    
+    // 模擬稍微延遲
+    setTimeout(async () => {
+      // A. 設定一個固定的測試 ID (方便你在 Supabase 搜尋)
+      userId.value = 'local_test_user_001'
+      
+      // B. 設定模擬的顯示名稱 (測試有無存入 DB)
+      displayName.value = '本地測試員' 
+      
+      console.log('✅ 模擬 ID 設定完成:', userId.value)
+      
+      // C. 關鍵！主動呼叫 loadUserData
+      // 這會觸發 useFetch('/api/user')，測試後端讀取功能
       await loadUserData(userId.value)
-    } else { $liff.login() }
-  } catch (e) { isLoading.value = false }
-})
-</script>
+      
+      // D. 關閉讀取畫面
+      isLoading.value = false
+    }, 500)
+    
+    return // 結束，不跑下面的真實 LIFF 邏輯
+  }
+    try {
+      await $liff.ready
+      if ($liff.isLoggedIn()) {
+        const profile = await $liff.getProfile()
+        userId.value = profile.userId
+        
+        // 🌟 1. 取得並存入狀態
+        displayName.value = profile.displayName
+        
+        // 🌟 2. 載入資料 (內部若判斷為新用戶，會自動存入 displayName)
+        await loadUserData(userId.value)
+      } else { $liff.login() }
+    } catch (e) { isLoading.value = false }
+  })
+  </script>
 
 <style scoped>
 @keyframes rakeFade {

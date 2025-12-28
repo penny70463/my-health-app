@@ -81,7 +81,9 @@ export default defineEventHandler(async (event) => {
     // 判斷日期與進度
     let currentWater = 0
     let currentLeg = 0
-    
+    const targetWater = user.goal_water || 2000
+    const targetLeg = user.goal_leg || 2
+
     // 只有當日期是「今天」時，才採信資料庫裡的 daily 數值
     if (user.last_active_date === today) {
       currentWater = user.daily_water || 0
@@ -91,8 +93,8 @@ export default defineEventHandler(async (event) => {
     console.log(`   📊 當前進度：水 ${currentWater}cc / 腿 ${currentLeg}組 (紀錄日期: ${user.last_active_date})`)
 
     // 檢查是否達標
-    const isWaterDone = currentWater >= 2000
-    const isLegDone = currentLeg >= 2
+    const isWaterDone = currentWater >= targetWater
+    const isLegDone = currentLeg >= targetLeg
 
     if (isWaterDone && isLegDone) {
       console.log(`   ✅ 該用戶今日任務已全部完成，跳過不打擾。`)
@@ -116,7 +118,7 @@ export default defineEventHandler(async (event) => {
           to: user.user_id,
           messages: [{
             type: 'text',
-            text: `${greeting} 農場小管家提醒\n\n${subText}\n\n💧 今日喝水：${currentWater}/2000 cc\n🦵 今日抬腿：${currentLeg}/2 組\n\n快回來照顧您的作物吧！💪\n\n${liffUrl}`
+            text: `${greeting} 農場小管家提醒\n\n${subText}\n\n💧 今日喝水：${currentWater}/${targetWater} cc\n🦵 今日抬腿：${currentLeg}/${targetLeg} 組\n\n快回來照顧您的作物吧！💪\n\n${liffUrl}`
           }]
         })
       })
