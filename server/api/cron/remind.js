@@ -9,7 +9,6 @@ export default defineEventHandler(async (event) => {
   const supabaseUrl = config.public.supabaseUrl
   // 優先嘗試使用 Service Key (權限較高)，若無則使用一般 Key
   let supabaseKey = config.supabaseServiceKey || process.env.SUPABASE_KEY 
-  let keyType = 'Service Key (超級權限)'
   const lineToken = process.env.LINE_CHANNEL_ACCESS_TOKEN
   
   if (!supabaseKey) {
@@ -17,9 +16,6 @@ export default defineEventHandler(async (event) => {
     supabaseKey = process.env.SUPABASE_KEY
     keyType = 'Anon Key (受 RLS 限制)'
   }
-  const keyPreview = supabaseKey ? `${supabaseKey.slice(0, 10)}...` : 'NULL'
-  console.log(`🔑 使用鑰匙類型: ${keyType}`)
-  console.log(`🔑 鑰匙預覽: ${keyPreview}`)
 
   // 檢查變數是否齊全
   if (!supabaseUrl || !supabaseKey || !lineToken) {
