@@ -48,6 +48,8 @@ export default defineNuxtConfig({
     preset: 'vercel'
   },
   runtimeConfig: {
+    // 私密變數 (只能在伺服器端 server/api 存取)
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
