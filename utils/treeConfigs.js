@@ -60,6 +60,43 @@ export const ITEM_DATA = {
       actions: { water: '澆水', leg: '追肥' },
       get stages() { return generateStages(this.id, this.type) }
     },
+    banana: {
+      id: 'banana',
+      type: 'plant',
+      name: '快樂香蕉樹',
+      description: '彎彎的黃色微笑，象徵滿滿的能量與好心情。',
+      color: 'text-yellow-400',
+      // 香蕉富含鉀離子預防抽筋，跟抬腿運動很搭！
+      actions: { water: '補水', leg: '施肥' },
+      get stages() { return generateStages(this.id) }
+    },
+    grape: {
+      id: 'grape',
+      type: 'plant',
+      name: '紫晶葡萄',
+      description: '成串的紫色寶石，象徵多子多孫與豐饒的成果。',
+      color: 'text-purple-500', // 新增紫色系
+      actions: { water: '澆水', leg: '整理藤蔓' },
+      get stages() { return generateStages(this.id) }
+    },
+    // sunflower: {
+    //   id: 'sunflower',
+    //   type: 'plant',
+    //   name: '活力向日葵',
+    //   description: '永遠面向陽光，象徵樂觀與勇敢追求夢想。',
+    //   color: 'text-yellow-400', // 明亮的黃色
+    //   actions: { water: '澆水', leg: '除草' },
+    //   get stages() { return generateStages(this.id) }
+    // },
+    // bamboo: {
+    //   id: 'bamboo',
+    //   type: 'plant',
+    //   name: '步步高昇竹',
+    //   description: '一節一節向上生長，象徵事業與健康節節高升。',
+    //   color: 'text-emerald-600', // 深綠色
+    //   actions: { water: '澆水', leg: '施肥' },
+    //   get stages() { return generateStages(this.id) }
+    // },
     chicken: {
       id: 'chicken',
       type: 'animal', // 標記為動物
@@ -68,7 +105,36 @@ export const ITEM_DATA = {
       color: 'text-yellow-500',
       actions: { water: '呵護', leg: '陪玩' }, 
       get stages() { return generateStages(this.id, this.type) }
-    }
+    },
+    // cow: {
+    //   id: 'cow',
+    //   type: 'animal',
+    //   name: '哞哞乳牛',
+    //   description: '提供營養滿滿的牛奶，象徵強壯的骨骼與體魄。',
+    //   color: 'text-slate-700', // 黑白色系 (用深灰文字)
+    //   // 動作設計：喝水=餵食/補水，抬腿=幫牛刷毛/擠奶(勞動)
+    //   actions: { water: '補水', leg: '刷毛' }, 
+    //   get stages() { return generateStages(this.id) }
+    // },
+    // rabbit: {
+    //   id: 'rabbit',
+    //   type: 'animal',
+    //   name: '蹦蹦小白兔',
+    //   description: '愛跳愛動的小可愛，象徵靈活的身手與活力。',
+    //   color: 'text-pink-400', // 粉色系
+    //   // 動作設計：兔子的強項就是後腿，跟使用者的「抬腿」任務完美呼應！
+    //   actions: { water: '餵食', leg: '陪跳' }, 
+    //   get stages() { return generateStages(this.id) }
+    // },
+    // sheep: {
+    //   id: 'sheep',
+    //   type: 'animal',
+    //   name: '雲朵綿羊',
+    //   description: '軟綿綿的療癒系，象徵優質的睡眠與放鬆。',
+    //   color: 'text-blue-300', // 淺藍/白色系
+    //   actions: { water: '補水', leg: '剪毛' }, 
+    //   get stages() { return generateStages(this.id) }
+    // },
   }
   
   // 隨機抽選一顆新樹 (排除目前的樹，避免連續種一樣的)
