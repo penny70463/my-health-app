@@ -106,16 +106,16 @@ export const ITEM_DATA = {
       actions: { water: '呵護', leg: '陪玩' }, 
       get stages() { return generateStages(this.id, this.type) }
     },
-    // cow: {
-    //   id: 'cow',
-    //   type: 'animal',
-    //   name: '哞哞乳牛',
-    //   description: '提供營養滿滿的牛奶，象徵強壯的骨骼與體魄。',
-    //   color: 'text-slate-700', // 黑白色系 (用深灰文字)
-    //   // 動作設計：喝水=餵食/補水，抬腿=幫牛刷毛/擠奶(勞動)
-    //   actions: { water: '補水', leg: '刷毛' }, 
-    //   get stages() { return generateStages(this.id) }
-    // },
+    cow: {
+      id: 'cow',
+      type: 'animal',
+      name: '哞哞乳牛',
+      description: '提供營養滿滿的牛奶，象徵強壯的骨骼與體魄。',
+      color: 'text-slate-700', // 黑白色系 (用深灰文字)
+      // 動作設計：喝水=餵食/補水，抬腿=幫牛刷毛/擠奶(勞動)
+      actions: { water: '補水', leg: '刷毛' }, 
+      get stages() { return generateStages(this.id) }
+    },
     // rabbit: {
     //   id: 'rabbit',
     //   type: 'animal',
