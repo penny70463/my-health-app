@@ -79,15 +79,15 @@ export const ITEM_DATA = {
       actions: { water: '澆水', leg: '整理藤蔓' },
       get stages() { return generateStages(this.id) }
     },
-    // sunflower: {
-    //   id: 'sunflower',
-    //   type: 'plant',
-    //   name: '活力向日葵',
-    //   description: '永遠面向陽光，象徵樂觀與勇敢追求夢想。',
-    //   color: 'text-yellow-400', // 明亮的黃色
-    //   actions: { water: '澆水', leg: '除草' },
-    //   get stages() { return generateStages(this.id) }
-    // },
+    sunflower: {
+      id: 'sunflower',
+      type: 'plant',
+      name: '活力向日葵',
+      description: '永遠面向陽光，象徵樂觀與勇敢追求夢想。',
+      color: 'text-yellow-400', // 明亮的黃色
+      actions: { water: '澆水', leg: '除草' },
+      get stages() { return generateStages(this.id) }
+    },
     // bamboo: {
     //   id: 'bamboo',
     //   type: 'plant',
