@@ -6,7 +6,15 @@
       <span class="text-2xl">📊</span>
       <div class="flex-1">
         <h1 class="text-lg font-bold leading-tight">財經詞頻儀表板</h1>
-        <p class="text-xs text-gray-400">{{ stats.latest_date ? `最新資料：${stats.latest_date}` : '載入中...' }}</p>
+        <p class="text-xs text-gray-400">{{ stats.latest_date ? `最新資料：${stats.latest_date}` : '整理資料中...' }}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <NuxtLink to="/chat" class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs font-semibold text-gray-200 transition hover:bg-gray-800">
+          小亮助理
+        </NuxtLink>
+        <NuxtLink to="/" class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs font-semibold text-gray-200 transition hover:bg-gray-800">
+          回到農場
+        </NuxtLink>
       </div>
       <select v-model="selectedDate" class="bg-gray-800 border border-gray-600 text-sm rounded-lg px-2 py-1 text-gray-100">
         <option v-for="d in dates" :key="d" :value="d">{{ d }}</option>

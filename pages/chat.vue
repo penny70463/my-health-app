@@ -7,19 +7,27 @@
       <div class="rounded-[28px] border border-white/70 bg-white/85 p-4 shadow-soft backdrop-blur">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">LIFF Chat</p>
-            <h1 class="text-2xl font-bold text-slate-800">和小亮聊聊天</h1>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">小亮健康助理</p>
+            <h1 class="text-2xl font-bold text-slate-800">和小亮聊聊今天的狀態</h1>
             <p class="mt-1 text-sm text-slate-500">
               {{ headerText }}
             </p>
           </div>
 
-          <NuxtLink
-            to="/"
-            class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-          >
-            返回農場
-          </NuxtLink>
+          <div class="flex items-center gap-2">
+            <NuxtLink
+              to="/dashboard"
+              class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              看儀表板
+            </NuxtLink>
+            <NuxtLink
+              to="/"
+              class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              返回農場
+            </NuxtLink>
+          </div>
         </div>
       </div>
 
@@ -63,8 +71,8 @@
             v-else
             class="rounded-3xl border border-dashed border-emerald-200 bg-emerald-50/70 px-5 py-8 text-center text-sm leading-7 text-emerald-900"
           >
-            這裡會顯示你和小亮的對話。<br>
-            因為改成 LIFF 頁面，所以不用等 LINE webhook 在 10 秒內回完。
+            在這裡留下你的問題、想法或今天的身體狀態。<br>
+            小亮整理好回覆後，會直接顯示在這個聊天室。
           </div>
         </div>
       </div>
@@ -121,9 +129,9 @@ const messageScroller = ref(null)
 let pollTimer = null
 
 const headerText = computed(() => {
-  if (isBooting.value) return '準備進入聊天中'
-  if (displayName.value) return `${displayName.value}，今天想聊什麼？`
-  return '直接在 LINE 裡聊天，不用另外登入'
+  if (isBooting.value) return '正在為你準備專屬聊天室'
+  if (displayName.value) return `${displayName.value}，今天想和小亮聊些什麼？`
+  return '直接在 LINE 內開啟，不需要另外登入'
 })
 
 const canType = computed(() => !isBooting.value && !!userId.value)

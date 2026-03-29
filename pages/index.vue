@@ -23,17 +23,29 @@
       </button>
     </div>
 
-    <div class="w-full max-w-md mb-4 px-2 relative z-10">
+    <div class="w-full max-w-md mb-4 px-2 relative z-10 space-y-3">
       <NuxtLink
         to="/chat"
         class="flex items-center justify-between rounded-2xl border border-emerald-100 bg-[linear-gradient(135deg,_#ecfdf5,_#dcfce7_55%,_#f0fdf4)] px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
       >
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">New</p>
-          <p class="mt-1 text-lg font-bold text-slate-800">和小亮聊天</p>
-          <p class="mt-1 text-sm text-slate-500">用 LIFF 聊天頁慢慢等回覆，不受 webhook timeout 影響</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">小亮助理</p>
+          <p class="mt-1 text-lg font-bold text-slate-800">健康陪聊與提問</p>
+          <p class="mt-1 text-sm text-slate-500">在 LINE 內直接和小亮互動，回覆完成後會自動顯示在聊天室</p>
         </div>
         <span class="rounded-full bg-white px-3 py-2 text-sm font-semibold text-emerald-700 shadow-sm">進入</span>
+      </NuxtLink>
+
+      <NuxtLink
+        to="/dashboard"
+        class="flex items-center justify-between rounded-2xl border border-sky-100 bg-[linear-gradient(135deg,_#eff6ff,_#e0f2fe_55%,_#f8fafc)] px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      >
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">Dashboard</p>
+          <p class="mt-1 text-lg font-bold text-slate-800">財經觀測儀表板</p>
+          <p class="mt-1 text-sm text-slate-500">查看主題熱度、詞頻趨勢與每日摘要，快速掌握最新焦點</p>
+        </div>
+        <span class="rounded-full bg-white px-3 py-2 text-sm font-semibold text-sky-700 shadow-sm">查看</span>
       </NuxtLink>
     </div>
 
