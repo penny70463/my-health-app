@@ -5,28 +5,34 @@
   >
     <div class="mx-auto flex w-full max-w-md flex-col gap-4">
       <div class="rounded-[28px] border border-white/70 bg-white/85 p-4 shadow-soft backdrop-blur">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">小亮健康助理</p>
-            <h1 class="text-2xl font-bold text-slate-800">和小亮聊聊今天的狀態</h1>
-            <p class="mt-1 text-sm text-slate-500">
+        <!-- 導覽與 eyebrow 同一列，避免與標題／輸入區並排時被誤認成送出 -->
+        <div class="flex w-full flex-col gap-3">
+          <div class="flex w-full min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-2">
+            <p class="min-w-0 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">
+              小亮健康助理
+            </p>
+            <nav class="flex shrink-0 flex-wrap items-center justify-end gap-2" aria-label="頁面導覽">
+              <NuxtLink
+                to="/dashboard"
+                class="whitespace-nowrap rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                看儀表板
+              </NuxtLink>
+              <NuxtLink
+                to="/"
+                class="whitespace-nowrap rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                返回農場
+              </NuxtLink>
+            </nav>
+          </div>
+          <div class="w-full min-w-0">
+            <h1 class="text-balance text-2xl font-bold leading-snug text-slate-800 break-words">
+              和小亮聊聊今天的狀態
+            </h1>
+            <p class="mt-1 text-sm text-slate-500 break-words">
               {{ headerText }}
             </p>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <NuxtLink
-              to="/dashboard"
-              class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              看儀表板
-            </NuxtLink>
-            <NuxtLink
-              to="/"
-              class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              返回農場
-            </NuxtLink>
           </div>
         </div>
       </div>
@@ -91,6 +97,7 @@
           placeholder="輸入想問小亮的內容..."
           class="min-h-[56px] flex-1 resize-none rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-[15px] leading-6 text-slate-800 outline-none transition focus:border-emerald-400 focus:bg-white"
           :disabled="!canType"
+          @keydown="onDraftKeydown"
         />
         <button
           type="submit"
@@ -291,6 +298,14 @@ async function bootstrapLiff() {
 
   await refreshJobs()
   isBooting.value = false
+}
+
+function onDraftKeydown(e) {
+  if (e.key !== 'Enter') return
+  if (e.shiftKey) return
+  if (e.isComposing) return
+  e.preventDefault()
+  if (canSend.value) void sendMessage()
 }
 
 async function sendMessage() {

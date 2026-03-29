@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-950 text-gray-100 px-4 py-5" style="max-width:900px; margin:0 auto;">
+  <div class="min-h-dvh w-full bg-gray-950 text-gray-100">
+    <div class="mx-auto px-4 py-5" style="max-width:900px">
 
     <!-- Header -->
     <div class="flex items-center gap-3 mb-5">
@@ -110,11 +111,12 @@
       </div>
     </div>
 
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 
 // Chart.js CDN 動態載入
 let Chart = null
