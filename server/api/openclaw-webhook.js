@@ -9,6 +9,26 @@ async function verifySignature(secret, body, signature) {
   return digest === signature
 }
 
+function getLineTargetId(source = {}) {
+  return source.userId || source.groupId || source.roomId || ''
+}
+
+async function replyLineMessage(accessToken, replyToken, text) {
+  if (!replyToken || !text) return
+
+  await $fetch('https://api.line.me/v2/bot/message/reply', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: {
+      replyToken,
+      messages: [{ type: 'text', text }]
+    }
+  })
+}
+
 export default defineEventHandler(async (event) => {
   if (event.node.req.method !== 'POST') {
     return { error: 'Method not allowed' }
@@ -45,51 +65,50 @@ export default defineEventHandler(async (event) => {
     if (lineEvent.type !== 'message' || lineEvent.message?.type !== 'text') continue
 
     const replyToken = lineEvent.replyToken
-    const userMessage = lineEvent.message.text
+    const userMessage = lineEvent.message.text?.trim()
     const userId = lineEvent.source?.userId ?? 'unknown'
+    const targetId = getLineTargetId(lineEvent.source)
 
-    console.log(`[openclaw-webhook] userId=${userId} msg=${userMessage}`)
+    if (!userMessage) continue
 
-    let replyText = ''
+    console.log(`[openclaw-webhook] userId=${userId} targetId=${targetId} msg=${userMessage}`)
 
-    if (openclawUrl) {
-      // 轉發給 OpenClaw
-      try {
-        const headers = { 'Content-Type': 'application/json' }
-        if (openclawKey) headers['Authorization'] = `Bearer ${openclawKey}`
-
-        const res = await $fetch(openclawUrl, {
-          method: 'POST',
-          headers,
-          body: {
-            message: userMessage,
-            userId,
-            source: 'line'
-          }
-        })
-        replyText = res?.reply ?? res?.message ?? String(res)
-      } catch (err) {
-        console.error('[openclaw-webhook] 呼叫 OpenClaw 失敗', err)
-        replyText = '小亮目前無法回應，請稍後再試。'
-      }
-    } else {
+    if (!openclawUrl) {
       // 回音 fallback（OpenClaw 未設定時）
-      replyText = `[echo] ${userMessage}`
+      try {
+        await replyLineMessage(accessToken, replyToken, `[echo] ${userMessage}`)
+      } catch (err) {
+        console.error('[openclaw-webhook] fallback reply 失敗', err)
+      }
+      continue
     }
 
-    // 透過 LINE Messaging API 回覆
-    if (replyToken && replyText) {
-      await $fetch('https://api.line.me/v2/bot/message/reply', {
+    // 轉交給 relay 之後就立刻結束 webhook，真正的 OpenClaw 推理與 LINE 回覆交給 relay 背景處理
+    try {
+      const headers = { 'Content-Type': 'application/json' }
+      if (openclawKey) headers['Authorization'] = `Bearer ${openclawKey}`
+
+      await $fetch(openclawUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
+        headers,
+        timeout: 4000,
         body: {
-          replyToken,
-          messages: [{ type: 'text', text: replyText }]
-        }
+          message: userMessage,
+          userId,
+          targetId,
+          source: 'line',
+          replyMode: 'push',
+          lineAccessToken: accessToken
+        },
       })
+    } catch (err) {
+      console.error('[openclaw-webhook] relay 呼叫失敗', err)
+
+      try {
+        await replyLineMessage(accessToken, replyToken, '小亮目前忙線中，請稍後再試。')
+      } catch (replyErr) {
+        console.error('[openclaw-webhook] fallback reply 失敗', replyErr)
+      }
     }
   }
 
