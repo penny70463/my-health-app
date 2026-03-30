@@ -280,6 +280,11 @@ async function bootstrapLiff() {
   if (import.meta.dev) {
     userId.value = 'local_test_user_001'
     displayName.value = '本地測試員'
+    const access = await $fetch('/api/access', { params: { userId: userId.value } })
+    if (!access.chat) {
+      await navigateTo('/')
+      return
+    }
     await refreshJobs()
     isBooting.value = false
     return
@@ -295,6 +300,12 @@ async function bootstrapLiff() {
   const profile = await $liff.getProfile()
   userId.value = profile.userId
   displayName.value = profile.displayName
+
+  const access = await $fetch('/api/access', { params: { userId: userId.value } })
+  if (!access.chat) {
+    await navigateTo('/')
+    return
+  }
 
   await refreshJobs()
   isBooting.value = false

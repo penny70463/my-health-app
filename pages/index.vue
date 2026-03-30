@@ -25,6 +25,7 @@
 
     <div class="w-full max-w-md mb-4 px-2 relative z-10 space-y-3">
       <NuxtLink
+        v-if="canChat"
         to="/chat"
         class="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-[linear-gradient(135deg,_#ecfdf5,_#dcfce7_55%,_#f0fdf4)] px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
       >
@@ -35,8 +36,21 @@
         </div>
         <span class="shrink-0 rounded-full bg-white px-3 py-2 text-sm font-semibold text-emerald-700 shadow-sm">進入</span>
       </NuxtLink>
+      <div
+        v-else
+        class="flex cursor-not-allowed items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/90 px-4 py-4 text-slate-500"
+        role="note"
+      >
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">小亮助理</p>
+          <p class="mt-1 text-lg font-bold text-slate-600">健康陪聊與提問</p>
+          <p class="mt-1 text-sm break-words text-slate-500">此功能僅限已授權帳號，請洽管理員開通。</p>
+        </div>
+        <span class="shrink-0 rounded-full bg-slate-200 px-3 py-2 text-sm font-semibold text-slate-500">未開通</span>
+      </div>
 
       <NuxtLink
+        v-if="canDashboard"
         to="/dashboard"
         class="flex items-center gap-3 rounded-2xl border border-sky-100 bg-[linear-gradient(135deg,_#eff6ff,_#e0f2fe_55%,_#f8fafc)] px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
       >
@@ -47,6 +61,18 @@
         </div>
         <span class="shrink-0 rounded-full bg-white px-3 py-2 text-sm font-semibold text-sky-700 shadow-sm">查看</span>
       </NuxtLink>
+      <div
+        v-else
+        class="flex cursor-not-allowed items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/90 px-4 py-4 text-slate-500"
+        role="note"
+      >
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Dashboard</p>
+          <p class="mt-1 text-lg font-bold text-slate-600">財經觀測儀表板</p>
+          <p class="mt-1 text-sm break-words text-slate-500">此功能僅限已授權帳號，請洽管理員開通。</p>
+        </div>
+        <span class="shrink-0 rounded-full bg-slate-200 px-3 py-2 text-sm font-semibold text-slate-500">未開通</span>
+      </div>
     </div>
 
     <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 space-y-5 relative z-10">
@@ -378,6 +404,9 @@ const { $liff } = useNuxtApp()
 const userId = ref(null)
 const displayName = ref(null) 
 const isLoading = ref(true)
+/** 與 LINE 登入分離：見 /api/access，權限來自 Supabase users.allowed_chat / allowed_dashboard */
+const canChat = ref(true)
+const canDashboard = ref(true)
 
 const showRakeEffect = ref(false)
 const showWaterEffect = ref(false) 
@@ -532,7 +561,15 @@ const loadUserData = async (uid) => {
         savedGrowth.value = data.saved_growth || 0
       }
     }
-  } catch (e) { console.error(e) } 
+
+    const access = await $fetch('/api/access', { params: { userId: uid } })
+    canChat.value = !!access.chat
+    canDashboard.value = !!access.dashboard
+  } catch (e) {
+    console.error(e)
+    canChat.value = false
+    canDashboard.value = false
+  }
   finally { isLoading.value = false }
 }
 

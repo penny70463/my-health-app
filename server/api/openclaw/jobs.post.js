@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
+import { assertLineChatAccess } from '../../utils/lineFeatureAccess'
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
@@ -35,6 +36,8 @@ export default defineEventHandler(async (event) => {
   if (!prompt) {
     throw createError({ statusCode: 400, statusMessage: 'Prompt is required' })
   }
+
+  await assertLineChatAccess(userId)
 
   const now = new Date().toISOString()
   const payload = {

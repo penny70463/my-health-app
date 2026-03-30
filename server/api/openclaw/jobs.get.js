@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { assertLineChatAccess } from '../../utils/lineFeatureAccess'
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
@@ -12,6 +13,8 @@ export default defineEventHandler(async (event) => {
   if (!userId) {
     throw createError({ statusCode: 400, statusMessage: 'User ID is required' })
   }
+
+  await assertLineChatAccess(userId)
 
   const { data, error } = await supabaseAdmin
     .from('openclaw_jobs')
