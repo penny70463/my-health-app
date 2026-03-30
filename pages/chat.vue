@@ -67,7 +67,14 @@
                   </span>
                 </template>
                 <template v-else>
-                  {{ block.text }}
+                  <div v-if="block.role === 'user'" class="whitespace-pre-wrap break-words">
+                    {{ block.text }}
+                  </div>
+                  <div
+                    v-else
+                    class="chat-md break-words text-[15px] leading-7 [&_a]:text-emerald-700 [&_a]:underline"
+                    v-html="assistantMarkdownToHtml(block.text)"
+                  />
                 </template>
               </div>
             </div>
@@ -116,6 +123,18 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import MarkdownIt from 'markdown-it'
+
+const mdAssistant = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+})
+
+function assistantMarkdownToHtml(text) {
+  if (!text) return ''
+  return mdAssistant.render(String(text))
+}
 
 useHead({
   title: '和小亮聊天'
@@ -362,3 +381,44 @@ onBeforeUnmount(() => {
   stopPolling()
 })
 </script>
+
+<style scoped>
+/* 小亮回覆：Markdown 呈現（**粗體**、列表、換行等） */
+.chat-md :deep(p) {
+  margin: 0.35em 0;
+}
+.chat-md :deep(p:first-child) {
+  margin-top: 0;
+}
+.chat-md :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.chat-md :deep(ul),
+.chat-md :deep(ol) {
+  margin: 0.35em 0;
+  padding-left: 1.35rem;
+}
+.chat-md :deep(ul) {
+  list-style-type: disc;
+}
+.chat-md :deep(ol) {
+  list-style-type: decimal;
+}
+.chat-md :deep(li) {
+  margin: 0.15em 0;
+}
+.chat-md :deep(strong) {
+  font-weight: 700;
+  color: rgb(15 23 42);
+}
+.chat-md :deep(hr) {
+  margin: 0.75rem 0;
+  border-color: rgb(203 213 225);
+}
+.chat-md :deep(blockquote) {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid rgb(203 213 225);
+  color: rgb(100 116 139);
+}
+</style>
