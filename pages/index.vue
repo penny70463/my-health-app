@@ -183,12 +183,21 @@
         </div>
 
         <div v-else class="flex items-center justify-center h-full animate-bounce-in">
-          <button 
+          <button
+            v-if="!isHarvestCompleted"
             @click="handleHarvest"
             class="w-full h-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xl font-bold rounded-2xl shadow-lg transform transition active:scale-95 flex flex-col items-center justify-center gap-1 border-4 border-white ring-4 ring-yellow-200"
           >
             <span class="text-3xl">🧺</span>
-            <span>採收果實 & 種新種子</span>
+            <span>採收果實</span>
+          </button>
+          <button
+            v-else
+            @click="plantNewSeed"
+            class="w-full h-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xl font-bold rounded-2xl shadow-lg transform transition active:scale-95 flex flex-col items-center justify-center gap-1 border-4 border-white ring-4 ring-emerald-100"
+          >
+            <span class="text-3xl">🌱</span>
+            <span>種下新種子</span>
           </button>
         </div>
       </div>
@@ -325,7 +334,7 @@
           <span :class="currentTreeConfig.color">{{ currentTreeConfig.name }}</span> 終於長大了！
         </p>
         <button @click="closeHarvestModal" class="w-full bg-orchardGreen text-white font-bold py-3 rounded-xl hover:bg-green-600 transition shadow-lg shadow-green-200">
-          種下新種子 🌱
+          回到農場
         </button>
       </div>
     </div>
@@ -411,6 +420,7 @@ const canDashboard = ref(true)
 const showRakeEffect = ref(false)
 const showWaterEffect = ref(false) 
 const showHarvestModal = ref(false)
+const isHarvestCompleted = ref(false)
 const showSettingsModal = ref(false)
 const showCollectionModal = ref(false)
 const waterCount = ref(0)
@@ -632,14 +642,20 @@ const handleHarvest = async () => {
   if (!unlockedTrees.value.includes(currentTreeId.value)) {
     unlockedTrees.value.push(currentTreeId.value)
   }
+  isHarvestCompleted.value = true
   showHarvestModal.value = true
+  await syncToCloud()
 }
 
 const closeHarvestModal = async () => {
   showHarvestModal.value = false
+}
+
+const plantNewSeed = async () => {
   const nextId = getRandomItemId(currentTreeId.value, unlockedTrees.value)
   currentTreeId.value = nextId
-  savedGrowth.value = -dailyPoints.value 
+  savedGrowth.value = -dailyPoints.value
+  isHarvestCompleted.value = false
   await syncToCloud()
   const isNew = !unlockedTrees.value.includes(nextId)
   const msg = isNew ? `太幸運了！發現了新物種：${ITEM_DATA[nextId].name} 🌱` : `新生命種下囉！這次是：${ITEM_DATA[nextId].name} 🌱`
