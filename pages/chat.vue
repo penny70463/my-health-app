@@ -132,7 +132,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import MarkdownIt from 'markdown-it'
 
 function escapeHtml(s) {
@@ -206,6 +206,16 @@ function assistantMarkdownToPlainText(md) {
   return plain
 }
 
+function normalizeCodeText(text) {
+  return String(text || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .map((line) => line.replace(/[\t ]+$/g, ''))
+    .join('\n')
+    .replace(/\n+$/g, '')
+}
+
 function copyAssistantMessage(rawMarkdown) {
   void copyTextToClipboard(assistantMarkdownToPlainText(rawMarkdown || ''))
 }
@@ -215,7 +225,7 @@ function onChatMdClick(e) {
   if (!btn) return
   const wrap = btn.closest('.chat-code-block')
   const codeEl = wrap?.querySelector('pre code')
-  const t = codeEl?.textContent ?? ''
+  const t = normalizeCodeText(codeEl?.textContent ?? '')
   void copyTextToClipboard(t)
 }
 
@@ -323,7 +333,10 @@ function stopPolling() {
 async function scrollToBottom() {
   await nextTick()
   if (!messageScroller.value) return
-  messageScroller.value.scrollTop = messageScroller.value.scrollHeight
+  requestAnimationFrame(() => {
+    if (!messageScroller.value) return
+    messageScroller.value.scrollTop = messageScroller.value.scrollHeight
+  })
 }
 
 async function refreshJobs() {
@@ -455,6 +468,13 @@ async function sendMessage() {
   }
 }
 
+watch(
+  () => isBooting.value,
+  async (booting) => {
+    if (!booting) await scrollToBottom()
+  }
+)
+
 onMounted(async () => {
   try {
     await bootstrapLiff()
@@ -535,8 +555,17 @@ onBeforeUnmount(() => {
 .chat-md :deep(h3) {
   font-size: 1rem;
 }
-/* fenced 內 pre 維持等寬、不撐破外層 */
-.chat-md :deep(.chat-code-scroll pre) {
+/* fenced 區塊：提高對比，維持橫向捲動 */
+.chat-md :deep(.chat-code-block) {
+  border-color: rgb(71 85 105 / 0.95);
+  background: rgb(2 6 23);
+}
+.chat-md :deep(.chat-code-block .chat-code-copy) {
+  color: rgb(167 243 208);
+}
+.chat-md :deep(.chat-code-scroll pre),
+.chat-md :deep(.chat-code-scroll code) {
+  color: rgb(241 245 249);
   white-space: pre;
   word-break: normal;
 }
