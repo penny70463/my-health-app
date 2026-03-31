@@ -63,7 +63,7 @@
                 <template v-if="block.pending">
                   <span class="inline-flex items-center gap-2 text-sm font-medium">
                     <span class="h-2 w-2 animate-pulse rounded-full bg-current" />
-                    小亮正在整理回覆...
+                    {{ block.pendingText || '小亮正在整理回覆...' }}
                   </span>
                 </template>
                 <template v-else>
@@ -291,11 +291,16 @@ const messageBlocks = computed(() => {
     }
 
     if (['pending', 'processing'].includes(job.status)) {
+      const pendingText = job.is_local
+        ? '訊息已送出，正在建立回覆...'
+        : (job.status === 'processing' ? '小亮正在生成回覆...' : '小亮正在整理回覆...')
+
       blocks.push({
         id: `${job.id}-pending`,
         role: 'assistant',
         text: '',
-        pending: true
+        pending: true,
+        pendingText
       })
     }
   }
@@ -320,6 +325,38 @@ function upsertJob(job) {
   }
 
   jobs.value = sortJobs(nextJobs)
+}
+
+function replaceJob(localId, nextJob) {
+  const nextJobs = [...jobs.value]
+  const index = nextJobs.findIndex((item) => item.id === localId)
+
+  if (index === -1) {
+    upsertJob(nextJob)
+    return
+  }
+
+  nextJobs[index] = nextJob
+  jobs.value = sortJobs(nextJobs)
+}
+
+function createOptimisticJob(prompt) {
+  const now = new Date().toISOString()
+  return {
+    id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    user_id: userId.value,
+    display_name: displayName.value || null,
+    prompt,
+    response_text: '',
+    status: 'pending',
+    error_message: '',
+    source: 'liff',
+    created_at: now,
+    updated_at: now,
+    started_at: now,
+    completed_at: null,
+    is_local: true
+  }
 }
 
 function stopPolling() {
@@ -445,6 +482,10 @@ async function sendMessage() {
 
   errorMessage.value = ''
   isSending.value = true
+  const optimisticJob = createOptimisticJob(prompt)
+  draft.value = ''
+  upsertJob(optimisticJob)
+  await scrollToBottom()
 
   try {
     const response = await $fetch('/api/openclaw/jobs', {
@@ -456,13 +497,18 @@ async function sendMessage() {
       }
     })
 
-    draft.value = ''
-    upsertJob(response.job)
+    replaceJob(optimisticJob.id, response.job)
     await scrollToBottom()
     startPolling(response.job.id)
   } catch (error) {
     console.error('[chat] send failed', error)
     errorMessage.value = '訊息送出失敗，請稍後再試。'
+    upsertJob({
+      ...optimisticJob,
+      status: 'error',
+      error_message: '訊息送出失敗，請稍後重試。'
+    })
+    draft.value = prompt
   } finally {
     isSending.value = false
   }
